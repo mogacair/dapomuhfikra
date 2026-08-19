@@ -329,7 +329,6 @@
           </div>
         </div>
 
-        <!-- Tabel Input Nilai Siswa -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -371,7 +370,7 @@
           </div>
           <div>
             <h3 class="font-bold text-slate-800 text-base">Menu Wali Kelas</h3>
-            <p class="text-xs text-slate-500">Pilih kelas bimbingan untuk mengelola deskripsi CP & cetak rapor</p>
+            <p class="text-xs text-slate-500">Pilih kelas bimbingan untuk mengelola CP & mencetak rapor</p>
           </div>
         </div>
 
@@ -382,20 +381,46 @@
         <div id="list-kelas-wali" class="grid grid-cols-1 gap-3.5"></div>
       </section>
 
-      <!-- ============================================== -->
-      <!-- SECTION 4E: RAPOT - CETAK RAPOR & INPUT CP     -->
-      <!-- ============================================== -->
+      <!-- ======================================================== -->
+      <!-- SECTION 4E: RAPOT - WALI KELAS (CP DI ATAS, CETAK BAWAH) -->
+      <!-- ======================================================== -->
       <section id="view-rapot-cetak-wali" class="hidden p-4 md:p-5 flex flex-col gap-4 animate-fade-in pb-16">
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3.5 no-print">
-          <div class="border-b pb-2 flex items-center justify-between">
+        
+        <!-- HEADER KELAS INFO -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between no-print">
+          <div>
+            <span class="bg-brand-green text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">Wali Kelas</span>
+            <h3 id="label-wali-kelas-nama" class="text-lg font-bold text-slate-900 mt-1">Kelas -</h3>
+          </div>
+          <span id="badge-total-siswa-wali" class="bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-lg">0 Siswa</span>
+        </div>
+
+        <!-- 1. FORM INPUT CAPAIAN PEMBELAJARAN (POSISI DI ATAS) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-col gap-3.5 no-print">
+          <div class="flex items-center justify-between border-b pb-2.5">
             <div>
-              <span class="bg-brand-green text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase">Wali Kelas</span>
-              <h3 id="label-wali-kelas-nama" class="text-lg font-bold text-slate-900 mt-1">Kelas -</h3>
+              <h4 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <i class="ph-bold ph-article text-brand-green text-base"></i> Capaian / Tujuan Pembelajaran
+              </h4>
+              <p class="text-xs text-slate-500 mt-0.5">Wajib diisi sebelum mencetak rapor siswa.</p>
             </div>
-            <span id="badge-total-siswa-wali" class="bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-lg">0 Siswa</span>
           </div>
 
-          <!-- 2 Tombol Aksi: Cetak Rapor Excel & PDF -->
+          <!-- Container dinamis kartu input CP mapel -->
+          <div id="container-input-cp" class="flex flex-col gap-3"></div>
+
+          <button onclick="simpanCPKeState()" class="w-full bg-brand-green hover:bg-brand-greenDark text-white py-3 px-4 rounded-xl font-bold text-xs md:text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-md shadow-emerald-100 mt-1">
+            <i class="ph-bold ph-floppy-disk text-lg"></i>
+            <span>Simpan Capaian Pembelajaran</span>
+          </button>
+        </div>
+
+        <!-- 2. TOMBOL AKSI CETAK RAPOR (POSISI DI BAWAH CP) -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3 no-print">
+          <div class="border-b pb-2">
+            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Cetak Dokumen Rapor</h4>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
             <button onclick="downloadExcelRaporWali()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 px-3 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-emerald-200 transition-all">
               <i class="ph-bold ph-file-xls text-xl"></i>
@@ -409,25 +434,6 @@
           </div>
         </div>
 
-        <!-- FORM INPUT CAPAIAN PEMBELAJARAN (CP) PER MAPEL (NO PRINT) -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-col gap-3.5 no-print">
-          <div class="flex items-center justify-between border-b pb-2.5">
-            <div>
-              <h4 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <i class="ph-bold ph-article text-brand-green text-base"></i> Capaian / Tujuan Pembelajaran
-              </h4>
-              <p class="text-xs text-slate-500 mt-0.5">Isi deskripsi capaian kompetensi tiap mapel dalam bentuk paragraf.</p>
-            </div>
-          </div>
-
-          <!-- Container dinamis kartu input CP mapel -->
-          <div id="container-input-cp" class="flex flex-col gap-3"></div>
-
-          <button onclick="simpanCPKeState()" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-2.5 px-4 rounded-xl font-bold text-xs md:text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow mt-1">
-            <i class="ph-bold ph-floppy-disk text-base"></i>
-            <span>Simpan Deskripsi Capaian Pembelajaran</span>
-          </button>
-        </div>
       </section>
 
     </main>
