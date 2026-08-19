@@ -1,4 +1,4 @@
-/** 
+/**
  * ============================================================
  * DAPODIK MUHFIKRA - CORE ENGINE & DATA SISWA (TAHAP 1)
  * File: app.js
@@ -248,7 +248,23 @@ function downloadExcelSiswa() {
   XLSX.writeFile(wb, fileName);
 }
 
+/**
+ * Fungsi Cetak PDF Data Siswa
+ */
 function cetakPDFSiswa() {
+  const filterElement = document.getElementById('filter-kelas');
+  const selectedClass = filterElement ? filterElement.value : 'ALL';
+
+  // Pastikan tabel cetak sudah ter-render dengan data terbaru
+  let filtered = DATA_SISWA;
+  if (selectedClass !== 'ALL') {
+    filtered = DATA_SISWA.filter(s => s.kelas === selectedClass);
+    document.getElementById('print-filter-info').innerText = `Filter: Kelas ${selectedClass}`;
+  } else {
+    document.getElementById('print-filter-info').innerText = `Filter: Semua Siswa`;
+  }
+  renderTablePrint(filtered);
+
   const now = new Date();
   const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   const formattedDate = now.toLocaleDateString('id-ID', options);
@@ -256,9 +272,7 @@ function cetakPDFSiswa() {
   document.getElementById('print-date-info').innerText = `Waktu Cetak: ${formattedDate}`;
   document.getElementById('print-sign-date').innerText = `Dicetak, ${now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`;
 
-  document.getElementById('print-section-siswa').classList.remove('hidden');
-  document.getElementById('print-section-rapot-input').classList.add('hidden');
-
+  // Buka dialog cetak browser
   window.print();
 }
 
