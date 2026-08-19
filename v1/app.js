@@ -21,7 +21,7 @@ let exitTimeout = null;
 document.addEventListener('DOMContentLoaded', () => {
   history.replaceState({ page: 'dashboard' }, 'Dashboard', '');
 
-  // Muat cache data siswa
+  // Muat cache data siswa secara instan
   const cachedSiswa = localStorage.getItem(STORAGE_KEY_SISWA);
   if (cachedSiswa) {
     try {
@@ -29,12 +29,17 @@ document.addEventListener('DOMContentLoaded', () => {
       populateClassFilter(DATA_SISWA);
       renderTableScreen(DATA_SISWA);
       renderTablePrint(DATA_SISWA);
+
+      // Sinkronkan ke modul rapot jika data cache ada
+      if (typeof onDataSiswaUpdated === 'function') {
+        onDataSiswaUpdated();
+      }
     } catch (e) {
       console.warn("Cache siswa rusak:", e);
     }
   }
 
-  // Sinkronkan data siswa dari Google Sheet
+  // Sinkronkan data siswa dari Google Sheet di background
   fetchDataFromGAS(false);
 });
 
@@ -73,6 +78,11 @@ async function fetchDataFromGAS(isManualRefresh = false) {
 
       populateClassFilter(DATA_SISWA);
       filterDataSiswa();
+
+      // Sinkronkan data live ke modul rapot seketika
+      if (typeof onDataSiswaUpdated === 'function') {
+        onDataSiswaUpdated();
+      }
     }
   } catch (error) {
     console.error("Fetch GAS Error:", error);
@@ -248,14 +258,10 @@ function downloadExcelSiswa() {
   XLSX.writeFile(wb, fileName);
 }
 
-/**
- * Fungsi Cetak PDF Data Siswa
- */
 function cetakPDFSiswa() {
   const filterElement = document.getElementById('filter-kelas');
   const selectedClass = filterElement ? filterElement.value : 'ALL';
 
-  // Pastikan tabel cetak sudah ter-render dengan data terbaru
   let filtered = DATA_SISWA;
   if (selectedClass !== 'ALL') {
     filtered = DATA_SISWA.filter(s => s.kelas === selectedClass);
@@ -272,7 +278,6 @@ function cetakPDFSiswa() {
   document.getElementById('print-date-info').innerText = `Waktu Cetak: ${formattedDate}`;
   document.getElementById('print-sign-date').innerText = `Dicetak, ${now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`;
 
-  // Buka dialog cetak browser
   window.print();
 }
 
@@ -300,7 +305,6 @@ function applyViewState(state) {
 
   const page = state ? state.page : 'dashboard';
 
-  // Sembunyikan semua section utama terlebih dahulu
   viewDashboard.classList.add('hidden');
   viewSiswa.classList.add('hidden');
   viewRapotGuru.classList.add('hidden');
@@ -308,7 +312,6 @@ function applyViewState(state) {
   viewRapotInput.classList.add('hidden');
   btnBack.classList.remove('hidden');
 
-  // Modal Siswa Detail
   if (page === 'siswa_detail') {
     viewSiswa.classList.remove('hidden');
     modalSiswa.classList.remove('opacity-0', 'pointer-events-none');
@@ -322,7 +325,6 @@ function applyViewState(state) {
   modalSiswa.classList.remove('opacity-100');
   modalSiswa.classList.add('opacity-0', 'pointer-events-none');
 
-  // Halaman: Data Siswa
   if (page === 'siswa') {
     viewSiswa.classList.remove('hidden');
     headerTitle.innerText = "Data Siswa";
@@ -330,7 +332,6 @@ function applyViewState(state) {
     return;
   }
 
-  // Rapot Level 1: Pilih Guru
   if (page === 'rapot_guru') {
     viewRapotGuru.classList.remove('hidden');
     headerTitle.innerText = "Pilih Guru";
@@ -338,7 +339,6 @@ function applyViewState(state) {
     return;
   }
 
-  // Rapot Level 2: Pilih Mapel
   if (page === 'rapot_mapel') {
     viewRapotMapel.classList.remove('hidden');
     headerTitle.innerText = "Mata Pelajaran";
@@ -346,7 +346,6 @@ function applyViewState(state) {
     return;
   }
 
-  // Rapot Level 3: Form Input Nilai Siswa
   if (page === 'rapot_input') {
     viewRapotInput.classList.remove('hidden');
     headerTitle.innerText = "Input Nilai";
@@ -354,7 +353,6 @@ function applyViewState(state) {
     return;
   }
 
-  // Default: Dashboard Utama
   if (page === 'dashboard') {
     viewDashboard.classList.remove('hidden');
     btnBack.classList.add('hidden');
