@@ -10,7 +10,7 @@ const STORAGE_KEY_NILAI = "DAPODIK_NILAI_INPUT_CACHE";
 // ============================================================
 // KONFIGURASI LOGO WATERMARK RAPOR (BISA DIGANTI URL/FILE ANDA)
 // ============================================================
-const WATERMARK_LOGO_URL = "Asset12.png";
+const WATERMARK_LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7b38oVbH1Yp9E0x2A6Oq8L1k9VqB_T9z6u_N9mK1s6aB/s1600/logo-tut-wuri-handayani.png";
 
 // Data Master Guru & Mapel yang Diampu
 const DATA_GURU_MAPEL = [
@@ -522,7 +522,7 @@ function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
 }
 
 /**
- * 3. CETAK RAPOR PDF WALI KELAS (WATERMARK TENGAH, LAYER ATAS 600px x 600px)
+ * 3. CETAK RAPOR PDF WALI KELAS (WATERMARK 520px x 520px DI TENGAH, LAYER ATAS)
  */
 function cetakPDFRaporSiswa() {
   const container = document.getElementById('print-section-rapor-lengkap');
@@ -578,9 +578,7 @@ function cetakPDFRaporSiswa() {
     });
 
     pageWrapper.innerHTML = `
-      <!-- ============================================================ -->
-      <!-- WATERMARK LOGO SEKOLAH (TENGAH, 600px x 600px, LAYER ATAS) -->
-      <!-- ============================================================ -->
+      <!-- WATERMARK LOGO SEKOLAH (520px x 520px, TENGAH, LAYER PALING ATAS) -->
       <div class="watermark-bg" style="background-image: url('${WATERMARK_LOGO_URL}');"></div>
 
       <!-- KONTEN DOKUMEN RAPOR -->
