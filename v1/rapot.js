@@ -10,7 +10,7 @@ const STORAGE_KEY_NILAI = "DAPODIK_NILAI_INPUT_CACHE";
 // ============================================================
 // KONFIGURASI LOGO WATERMARK RAPOR (BISA DIGANTI URL/FILE ANDA)
 // ============================================================
-const WATERMARK_LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7b38oVbH1Yp9E0x2A6Oq8L1k9VqB_T9z6u_N9mK1s6aB/s1600/logo-tut-wuri-handayani.png";
+const WATERMARK_LOGO_URL = "Asset12.png";
 
 // Data Master Guru & Mapel yang Diampu
 const DATA_GURU_MAPEL = [
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderGuruCards();
 
-  // Reset tampilan setelah dialog print selesai (agar tidak berantakan)
+  // Reset tampilan setelah dialog print selesai agar DOM kembali bersih
   window.addEventListener("afterprint", () => {
     const printContainer = document.getElementById('print-section-rapor-lengkap');
     if (printContainer) {
@@ -520,11 +520,11 @@ function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
   if (store && store[nisn] !== undefined && store[nisn] !== '') {
     return Number(store[nisn]);
   }
-  return 78; // Nilai default sampel
+  return 78;
 }
 
 /**
- * 3. CETAK RAPOR PDF WALI KELAS (DILENGKAPI WATERMARK & TABEL TAMBAHAN)
+ * 3. CETAK RAPOR PDF WALI KELAS (REVISI: HEADER SEKOLAH, WATERMARK & TABEL TAMBAHAN)
  */
 function cetakPDFRaporSiswa() {
   const container = document.getElementById('print-section-rapor-lengkap');
@@ -543,7 +543,6 @@ function cetakPDFRaporSiswa() {
   const konsentrasi = getKonsentrasiKeahlian(activeKelasWali);
   const fase = getFaseKelas(activeKelasWali);
 
-  // Daftar seluruh mata pelajaran
   let allMapelList = [];
   DATA_GURU_MAPEL.forEach(guru => {
     guru.mapel.forEach(m => {
@@ -556,7 +555,7 @@ function cetakPDFRaporSiswa() {
     });
   });
 
-  // Susun Halaman Rapor untuk Setiap Siswa
+  // Susun lembar rapor per siswa
   siswaList.forEach((siswa, sIdx) => {
     const pageWrapper = document.createElement('div');
     pageWrapper.className = sIdx < siswaList.length - 1 ? "page-break watermark-container p-4 text-black relative" : "watermark-container p-4 text-black relative";
@@ -586,14 +585,15 @@ function cetakPDFRaporSiswa() {
       <div class="watermark-bg" style="background-image: url('${WATERMARK_LOGO_URL}');"></div>
 
       <div style="position: relative; z-index: 1;">
-        <!-- JUDUL RAPOR (Center, Bold, 14pt) -->
+        <!-- JUDUL RAPOR & NAMA SEKOLAH (Center, Bold, 14pt) -->
         <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 14px; line-height: 1.3;">
           <div>LAPORAN HASIL BELAJAR (RAPOR)</div>
-          <div style="font-size: 12pt; font-weight: bold; margin-top: 2px;">Tahun Pelajaran : ${tapel}</div>
+          <div>SMK Muhammadiyah 5 Karanganyar</div>
+          <div style="font-size: 11pt; font-weight: bold; margin-top: 4px;">Tahun Pelajaran : ${tapel}</div>
           <div style="font-size: 11pt; font-weight: 600; margin-top: 2px;">Kelas / Fase : ${siswa.kelas} / ${fase}, Semester : ${semester}</div>
         </div>
 
-        <!-- IDENTITAS SISWA (Left, Bold, 12pt) -->
+        <!-- IDENTITAS SISWA (Left, Bold, 11pt) -->
         <div style="font-size: 11pt; font-weight: bold; margin-bottom: 12px; line-height: 1.4;">
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
@@ -700,7 +700,7 @@ function cetakPDFRaporSiswa() {
           </div>
 
           <div style="text-align: center; width: 220px;">
-            <div>Grogol, 19 Agustus 2026</div>
+            <div>Karanganyar, 19 Agustus 2026</div>
             <div style="margin-top: 2px; font-weight: bold;">Wali Kelas</div>
             <div style="height: 55px;"></div>
             <div style="font-weight: bold; text-decoration: underline;">( _________________________ )</div>
@@ -714,13 +714,11 @@ function cetakPDFRaporSiswa() {
   });
 
   container.classList.remove('hidden');
-
-  // Trigger print dialog
   window.print();
 }
 
 /**
- * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER LENGKAP
+ * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER (REVISI: NT, NP, NA & KOLOM RINGKAS)
  */
 function downloadExcelRaporWali() {
   const siswaList = DATA_SISWA.filter(s => s.kelas === activeKelasWali);
@@ -734,7 +732,6 @@ function downloadExcelRaporWali() {
   const semester = "Ganjil";
   const fase = getFaseKelas(activeKelasWali);
 
-  // Kumpulkan mapel
   let allMapelList = [];
   DATA_GURU_MAPEL.forEach(guru => {
     guru.mapel.forEach(m => {
@@ -751,16 +748,16 @@ function downloadExcelRaporWali() {
     ["LEGGER RAPOR"],
     [`Tahun Pelajaran: ${tapel}`],
     [`Kelas / Fase: ${activeKelasWali} / ${fase}, Semester: ${semester}`],
-    [] // Baris kosong pemisah
+    []
   ];
 
-  // Baris Header 1 (Nama Kolom & Nama Mapel)
+  // Baris Header 1 & 2 (Header Singkat: NT, NP, NA)
   const headerRow1 = ["NO", "NISN", "NAMA PESERTA DIDIK"];
   const headerRow2 = ["", "", ""];
 
   allMapelList.forEach(m => {
     headerRow1.push(m.namaMapel, "", "");
-    headerRow2.push("Nilai Teori", "Praktek", "Nilai Akhir");
+    headerRow2.push("NT", "NP", "NA");
   });
 
   headerRow1.push("TOTAL NILAI", "PERINGKAT");
@@ -769,7 +766,7 @@ function downloadExcelRaporWali() {
   sheetData.push(headerRow1);
   sheetData.push(headerRow2);
 
-  // Hitung total nilai siswa untuk menentukan peringkat
+  // Hitung total nilai & peringkat siswa
   const calculatedRows = siswaList.map((s, sIdx) => {
     let totalScore = 0;
     const scores = [];
@@ -792,14 +789,12 @@ function downloadExcelRaporWali() {
     };
   });
 
-  // Urutkan untuk penentuan peringkat
   const sortedByScore = [...calculatedRows].sort((a, b) => b.totalScore - a.totalScore);
   const rankMap = {};
   sortedByScore.forEach((item, rIdx) => {
     rankMap[item.nisn] = rIdx + 1;
   });
 
-  // Masukkan data siswa ke sheetData
   calculatedRows.forEach(row => {
     sheetData.push([
       row.index,
@@ -813,14 +808,14 @@ function downloadExcelRaporWali() {
 
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-  // Konfigurasi Merge Cells untuk Header Legger
+  // Merge Cells Header
   const merges = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }, // Judul
-    { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } }, // Tapel
-    { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } }, // Kelas
-    { s: { r: 4, c: 0 }, e: { r: 5, c: 0 } }, // NO
-    { s: { r: 4, c: 1 }, e: { r: 5, c: 1 } }, // NISN
-    { s: { r: 4, c: 2 }, e: { r: 5, c: 2 } }  // NAMA
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } },
+    { s: { r: 4, c: 0 }, e: { r: 5, c: 0 } },
+    { s: { r: 4, c: 1 }, e: { r: 5, c: 1 } },
+    { s: { r: 4, c: 2 }, e: { r: 5, c: 2 } }
   ];
 
   let colOffset = 3;
@@ -833,24 +828,24 @@ function downloadExcelRaporWali() {
   });
 
   merges.push(
-    { s: { r: 4, c: colOffset }, e: { r: 5, c: colOffset } },       // TOTAL NILAI
-    { s: { r: 4, c: colOffset + 1 }, e: { r: 5, c: colOffset + 1 } } // PERINGKAT
+    { s: { r: 4, c: colOffset }, e: { r: 5, c: colOffset } },
+    { s: { r: 4, c: colOffset + 1 }, e: { r: 5, c: colOffset + 1 } }
   );
 
   ws['!merges'] = merges;
 
-  // Atur Lebar Kolom
+  // Lebar kolom ringkas (kolom angka NT, NP, NA hanya 5 karakter)
   const cols = [
-    { wch: 6 },  // NO
-    { wch: 18 }, // NISN
-    { wch: 35 }  // NAMA
+    { wch: 5 },  // NO
+    { wch: 16 }, // NISN
+    { wch: 28 }  // NAMA
   ];
 
   allMapelList.forEach(() => {
-    cols.push({ wch: 12 }, { wch: 10 }, { wch: 12 });
+    cols.push({ wch: 5 }, { wch: 5 }, { wch: 5 }); // NT, NP, NA ringkas
   });
 
-  cols.push({ wch: 14 }, { wch: 12 });
+  cols.push({ wch: 11 }, { wch: 10 }); // TOTAL NILAI, PERINGKAT
   ws['!cols'] = cols;
 
   const wb = XLSX.utils.book_new();
