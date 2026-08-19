@@ -1,4 +1,4 @@
-/** 
+/**
  * ============================================================
  * DAPODIK MUHFIKRA - MODUL RAPOT & PENILAIAN SISWA (TAHAP 4)
  * File: rapot.js
@@ -46,7 +46,6 @@ let DB_NILAI_STORE = {}; // Menyimpan skor input: key = `${guruId}_${mapelId}_${
  * Inisialisasi Modul Rapot
  */
 document.addEventListener('DOMContentLoaded', () => {
-  // Muat cache nilai yang pernah disimpan
   const cachedNilai = localStorage.getItem(STORAGE_KEY_NILAI);
   if (cachedNilai) {
     try {
@@ -54,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
   }
 
-  // Render Cardboard Guru di awal
   renderGuruCards();
 });
 
@@ -156,7 +154,6 @@ function populateSelectKelasInput() {
   const select = document.getElementById('select-rapot-kelas');
   if (!select) return;
 
-  // Mengambil data kelas unik dari DATA_SISWA yang ada di app.js
   const kelasSiswa = [...new Set(DATA_SISWA.map(s => s.kelas).filter(k => k))].sort();
   const optionsKelas = kelasSiswa.length > 0 ? kelasSiswa : ["VII-A", "VII-B", "VIII-A", "VIII-B", "IX-A"];
 
@@ -194,7 +191,6 @@ function renderTabelInputNilai() {
 
   tbody.innerHTML = '';
 
-  // Filter siswa berdasarkan kelas terpilih dari data master DATA_SISWA
   const siswaList = DATA_SISWA.filter(s => s.kelas === kelasTerpilih);
 
   if (siswaList.length === 0) {
@@ -250,7 +246,7 @@ function simpanNilaiKeState() {
 }
 
 /**
- * 4. EXPORT EXCEL & PDF FORM INPUT NILAI
+ * 4. DOWNLOAD EXCEL REKAP NILAI DENGAN HEADER IDENTITAS & AUTO-WIDTH NAMA
  */
 function downloadExcelRapotInput() {
   const tapel = document.getElementById('input-tapel').value;
@@ -266,76 +262,50 @@ function downloadExcelRapotInput() {
     return;
   }
 
-  const exportRows = siswaList.map((s, idx) => {
-    const score = savedScores[s.nisn] !== undefined ? savedScores[s.nisn] : '';
-    return {
-      "No": idx + 1,
-      "Tahun Pelajaran": tapel,
-      "Guru Pengampu": activeGuru.nama,
-      "Mata Pelajaran": activeMapel.namaMapel,
-      "Jenis Nilai": jenis,
-      "Kelas": s.kelas,
-      "NISN": s.nisn,
-      "Nama Siswa": s.nama,
-      "Nilai": score,
-      "Status KKM (75)": score !== '' ? (Number(score) >= 75 ? "Tuntas" : "Belum Tuntas") : "Belum Dinilai"
-    };
-  });
+  // 1. Susun baris metadata judul atas
+  const sheetData = [
+    ["MATA PELAJARAN", `: ${activeMapel.namaMapel}`],
+    ["GURU PENGAMPU", `: ${activeGuru.nama}`],
+    ["TAHUN PELAJARAN", `: ${tapel}`],
+    ["JENIS PENILAIAN", `: ${jenis} (Kelas ${kelas})`],
+    [], // Baris kosong pemisah
+    ["NO", "NIS / NIPD", "NISN", "NAMA LENGKAP SISWA", "KELAS", "NILAI", "STATUS KKM (75)"]
+  ];
 
-  const ws = XLSX.utils.json_to_sheet(exportRows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `${kelas}_${jenis}`);
-
-  const fileName = `Nilai_${activeMapel.namaMapel}_${kelas}_${jenis}.xlsx`;
-  XLSX.writeFile(wb, fileName);
-}
-
-function cetakPDFRapotInput() {
-  const tapel = document.getElementById('input-tapel').value;
-  const kelas = document.getElementById('select-rapot-kelas').value;
-  const jenis = document.getElementById('select-rapot-jenis').value;
-  const storeKey = getNilaiStoreKey();
-  const savedScores = DB_NILAI_STORE[storeKey] || {};
-
-  const siswaList = DATA_SISWA.filter(s => s.kelas === kelas);
-  const tbodyPrint = document.getElementById('tbody-print-input-nilai');
-  tbodyPrint.innerHTML = '';
-
-  document.getElementById('print-input-subtitle').innerText = `Tahun Pelajaran: ${tapel} | Mapel: ${activeMapel.namaMapel} | Guru: ${activeGuru.nama}`;
-  document.getElementById('print-input-filter-info').innerText = `Kelas: ${kelas} | Jenis Nilai: ${jenis}`;
-  document.getElementById('print-input-sign-name').innerText = `( ${activeGuru.nama} )`;
-
-  const now = new Date();
-  document.getElementById('print-input-date-info').innerText = `Waktu Cetak: ${now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
-  document.getElementById('print-input-sign-date').innerText = `Dicetak, ${now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`;
-
-  let scoresOnly = [];
-
+  // 2. Masukkan data tabel siswa
   siswaList.forEach((s, idx) => {
-    const val = savedScores[s.nisn];
-    const scoreText = val !== undefined && val !== '' ? val : '-';
-    if (val !== undefined && val !== '') scoresOnly.push(Number(val));
+    const score = savedScores[s.nisn] !== undefined ? savedScores[s.nisn] : '';
+    const status = score !== '' ? (Number(score) >= 75 ? "Tuntas" : "Belum Tuntas") : "Belum Dinilai";
 
-    const isTuntas = val !== undefined && val !== '' && Number(val) >= 75;
-    const tr = document.createElement('tr');
-    tr.className = idx % 2 === 0 ? "bg-white" : "bg-gray-50";
-
-    tr.innerHTML = `
-      <td class="border border-black p-1.5 text-center font-bold">${idx + 1}</td>
-      <td class="border border-black p-1.5 text-center font-mono">${s.nis || '-'}</td>
-      <td class="border border-black p-1.5 font-bold">${s.nama}</td>
-      <td class="border border-black p-1.5 text-center font-semibold">${s.kelas}</td>
-      <td class="border border-black p-1.5 text-center font-bold">${scoreText}</td>
-      <td class="border border-black p-1.5 text-center font-semibold ${isTuntas ? 'text-black' : 'text-red-600'}">${scoreText !== '-' ? (isTuntas ? 'Tuntas' : 'Remedial') : '-'}</td>
-    `;
-    tbodyPrint.appendChild(tr);
+    sheetData.push([
+      idx + 1,
+      s.nis || "-",
+      s.nisn || "-",
+      s.nama || "-",
+      s.kelas || "-",
+      score !== '' ? Number(score) : "-",
+      status
+    ]);
   });
 
-  const avg = scoresOnly.length > 0 ? (scoresOnly.reduce((a, b) => a + b, 0) / scoresOnly.length).toFixed(1) : 0;
-  document.getElementById('print-input-stat-summary').innerText = `Total Siswa: ${siswaList.length} | Rata-rata Nilai: ${avg}`;
+  // 3. Buat worksheet dan hitung lebar kolom otomatis (Auto Column Width)
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-  document.getElementById('print-section-rapot-input').classList.remove('hidden');
-  document.getElementById('print-section-siswa').classList.add('hidden');
+  // Atur lebar kolom agar nama panjang tidak terpotong
+  ws['!cols'] = [
+    { wch: 6 },  // NO
+    { wch: 16 }, // NIS
+    { wch: 18 }, // NISN
+    { wch: 38 }, // NAMA LENGKAP (Cukup lebar agar terlihat utuh)
+    { wch: 12 }, // KELAS
+    { wch: 10 }, // NILAI
+    { wch: 18 }  // STATUS KKM
+  ];
 
-  window.print();
+  const wb = XLSX.utils.book_new();
+  const safeSheetName = `${kelas}_${jenis}`.substring(0, 31);
+  XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+
+  const fileName = `Nilai_${activeMapel.namaMapel.replace(/[^a-zA-Z0-9]/g, '_')}_${kelas}_${jenis.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`;
+  XLSX.writeFile(wb, fileName);
 }
