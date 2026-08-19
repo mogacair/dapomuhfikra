@@ -5,7 +5,7 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-/* Scrollbar Biasa Kontras & Tebal */
+/* Scrollbar Tebal & Kontras untuk Laptop/PC */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -44,22 +44,26 @@ body {
   break-after: page;
 }
 
-/* Watermark Rapor Siswa Transparansi 25% */
+/* Container Pembungkus Per Lembar Rapor */
 .watermark-container {
   position: relative;
   background-color: white;
+  min-height: 270mm;
 }
 
+/* ============================================================ */
+/* WATERMARK LOGO SEKOLAH (TENGAH, 600px, LAYER ATAS, OPACITY 10%) */
+/* ============================================================ */
 .watermark-bg {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 320px;
-  height: 320px;
-  opacity: 0.25; /* Transparansi 25% */
+  width: 600px;
+  height: 600px;
+  opacity: 0.10;
   pointer-events: none;
-  z-index: 0;
+  z-index: 99;
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -73,7 +77,6 @@ body {
     color: black !important;
   }
 
-  /* Sembunyikan frame aplikasi saat mode print aktif */
   #app-frame {
     display: none !important;
   }
