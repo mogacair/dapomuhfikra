@@ -1,23 +1,23 @@
 /**
  * ============================================================
  * DAPODIK MUHFIKRA - MODUL RAPOT & WALI KELAS (TAHAP 4)
- * File: rapot.js
+ * File: rapot.js (Multi-GAS URL Ready)
  * ============================================================
  */
 
 const STORAGE_KEY_NILAI = "DAPODIK_NILAI_INPUT_CACHE";
 const STORAGE_KEY_CP = "DAPODIK_CP_MAPEL_CACHE";
-
-// ============================================================
-// KONFIGURASI FILE WATERMARK LOGO SEKOLAH
-// ============================================================
 const WATERMARK_LOGO_FILE = "./Asset12.png";
 
-// Data Master Guru & Mapel yang Diampu
+// ============================================================
+// DAFTAR GURU & GAS URL MASING-MASING (MULTI-GAS READY)
+// ============================================================
 const DATA_GURU_MAPEL = [
   {
     id: "G1",
     nama: "Hendra Gunawan, S.Kom",
+    // GAS URL Guru 1
+    gasUrl: "https://script.google.com/macros/s/AKfycbzwmXsugILKA3QlWYh8b2inYdK5kGGbSFDDFGkJyfskrgTIrRRfWfV_O6OFFD5m8zdX/exec",
     mapel: [
       { id: "M1", namaMapel: "Dasar-Dasar Kejuruan", sheetName: "2026/2027 Dasar Kejuruan" },
       { id: "M2", namaMapel: "Administrasi Sistem & Jaringan", sheetName: "2026/2027 Jaringan Komputer" }
@@ -26,6 +26,8 @@ const DATA_GURU_MAPEL = [
   {
     id: "G2",
     nama: "Sri Wahyuni, S.Pd",
+    // Isi GAS URL Guru 2 saat sudah di-deploy:
+    gasUrl: "",
     mapel: [
       { id: "M3", namaMapel: "Pemasaran & Bisnis Digital", sheetName: "2026/2027 BISNIS DIGITAL" },
       { id: "M4", namaMapel: "Ekonomi Bisnis", sheetName: "2026/2027 EKONOMI BISNIS" }
@@ -34,6 +36,8 @@ const DATA_GURU_MAPEL = [
   {
     id: "G3",
     nama: "Ahmad Fauzi, M.Pd",
+    // Isi GAS URL Guru 3 saat sudah di-deploy:
+    gasUrl: "",
     mapel: [
       { id: "M5", namaMapel: "Matematika Kejuruan", sheetName: "2026/2027 MATEMATIKA" },
       { id: "M6", namaMapel: "Pendidikan Pancasila", sheetName: "2026/2027 PANCASILA" }
@@ -46,7 +50,7 @@ let activeGuru = null;
 let activeMapel = null;
 let activeKelasWali = null;
 let DB_NILAI_STORE = {};
-let DB_CP_STORE = {}; // key = `${kelas}_${mapelId}`
+let DB_CP_STORE = {};
 
 document.addEventListener('DOMContentLoaded', () => {
   const cachedNilai = localStorage.getItem(STORAGE_KEY_NILAI);
@@ -65,6 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderGuruCards();
 
+  // Sinkronkan seluruh data nilai dari semua guru secara simultan
+  fetchAllGuruNilaiFromGAS();
+
   window.addEventListener("afterprint", () => {
     const printContainer = document.getElementById('print-section-rapor-lengkap');
     if (printContainer) {
@@ -77,6 +84,47 @@ document.addEventListener('DOMContentLoaded', () => {
 function onDataSiswaUpdated() {
   populateSelectKelasInput();
   renderKelasWaliCards();
+  const viewRapotInput = document.getElementById('view-rapot-input');
+  if (viewRapotInput && !viewRapotInput.classList.contains('hidden')) {
+    renderTabelInputNilai();
+  }
+}
+
+/**
+ * Penarikan Data Multi-GAS URL (Tarik nilai dari semua spreadsheet guru sekaligus)
+ */
+async function fetchAllGuruNilaiFromGAS() {
+  const fetchPromises = DATA_GURU_MAPEL.map(async (guru) => {
+    if (!guru.gasUrl || guru.gasUrl.trim() === '') return;
+
+    try {
+      const response = await fetch(guru.gasUrl, { method: 'GET', redirect: 'follow' });
+      const result = await response.json();
+
+      if (result.status === "success" && Array.isArray(result.data)) {
+        result.data.forEach(item => {
+          const mapelObj = guru.mapel.find(m => m.sheetName === item.sheet || m.namaMapel.toLowerCase() === (item.mapel || '').toLowerCase());
+          if (mapelObj) {
+            const tapel = "2026/2027";
+            const storeKey = `${guru.id}_${mapelObj.id}_${tapel}_${item.kelas}_${item.jenis}`;
+
+            if (!DB_NILAI_STORE[storeKey]) DB_NILAI_STORE[storeKey] = {};
+
+            const siswa = DATA_SISWA.find(s => s.nama.trim().toLowerCase() === (item.nama || '').trim().toLowerCase());
+            if (siswa) {
+              DB_NILAI_STORE[storeKey][siswa.nisn] = Number(item.nilai);
+            }
+          }
+        });
+      }
+    } catch (err) {
+      console.warn(`Sinkronisasi nilai gagal untuk ${guru.nama}:`, err);
+    }
+  });
+
+  await Promise.allSettled(fetchPromises);
+  localStorage.setItem(STORAGE_KEY_NILAI, JSON.stringify(DB_NILAI_STORE));
+
   const viewRapotInput = document.getElementById('view-rapot-input');
   if (viewRapotInput && !viewRapotInput.classList.contains('hidden')) {
     renderTabelInputNilai();
@@ -310,11 +358,13 @@ function renderTabelInputNilai() {
 
 function simpanNilaiKeState() {
   const kelasTerpilih = document.getElementById('select-rapot-kelas').value;
+  const jenisTerpilih = document.getElementById('select-rapot-jenis').value;
   const siswaList = DATA_SISWA.filter(s => s.kelas === kelasTerpilih);
   const storeKey = getNilaiStoreKey();
 
   let adaNilaiInvalid = false;
   let invalidInputEl = null;
+  const gasPayloadData = [];
 
   siswaList.forEach(siswa => {
     const inputEl = document.getElementById(`input-score-${siswa.nisn}`);
@@ -323,6 +373,15 @@ function simpanNilaiKeState() {
       if (val.length === 1) {
         adaNilaiInvalid = true;
         if (!invalidInputEl) invalidInputEl = inputEl;
+      }
+      if (val !== '') {
+        gasPayloadData.push({
+          jenis: jenisTerpilih,
+          nama: siswa.nama,
+          kelas: kelasTerpilih,
+          mapel: activeMapel.namaMapel,
+          nilai: Number(val)
+        });
       }
     }
   });
@@ -346,6 +405,25 @@ function simpanNilaiKeState() {
   });
 
   localStorage.setItem(STORAGE_KEY_NILAI, JSON.stringify(DB_NILAI_STORE));
+
+  // Simpan sinkronisasi ke Spreadsheet Guru pemilik mapel
+  if (activeGuru && activeGuru.gasUrl && activeGuru.gasUrl.trim() !== '' && gasPayloadData.length > 0) {
+    try {
+      fetch(activeGuru.gasUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: "save_nilai",
+          sheetName: activeMapel.sheetName,
+          data: gasPayloadData
+        })
+      }).catch(() => {});
+    } catch (e) {
+      console.warn("GAS save error:", e);
+    }
+  }
+
   alert(`Berhasil menyimpan nilai untuk kelas ${kelasTerpilih}!`);
 }
 
@@ -486,17 +564,11 @@ function selectKelasWali(kelasName) {
   applyViewState({ page: 'rapot_cetak_wali', kelas: kelasName });
 }
 
-/**
- * Buka Pencarian Google untuk Referensi Capaian Pembelajaran Mapel
- */
 function openReferensiCP(mapelName) {
   const query = encodeURIComponent(`Capaian Pembelajaran Kurikulum Merdeka ${mapelName} SMK`);
   window.open(`https://www.google.com/search?q=${query}`, '_blank');
 }
 
-/**
- * Render Input Textarea CP dengan Tombol Referensi di Kiri Nama Mapel
- */
 function renderInputCPMapel(kelasName) {
   const container = document.getElementById('container-input-cp');
   if (!container) return;
@@ -524,7 +596,6 @@ function renderInputCPMapel(kelasName) {
     div.innerHTML = `
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2">
-          <!-- TOMBOL REFERANSI GOOGLE DI SEBELAH KIRI NAMA MAPEL -->
           <button onclick="openReferensiCP('${m.namaMapel}')" 
                   title="Cari referensi Capaian Pembelajaran di Google"
                   class="bg-sky-100 hover:bg-sky-200 text-sky-700 text-[11px] font-extrabold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 active:scale-95 transition-all shadow-sm">
@@ -546,14 +617,11 @@ function renderInputCPMapel(kelasName) {
   });
 }
 
-/**
- * Simpan Deskripsi CP ke LocalStorage dan Kirim ke Google Apps Script (Backend)
- */
 async function simpanCPKeState() {
   let allMapelList = [];
   DATA_GURU_MAPEL.forEach(guru => {
     guru.mapel.forEach(m => {
-      allMapelList.push({ id: m.id, mapel: m.namaMapel, guru: guru.nama });
+      allMapelList.push({ id: m.id, mapel: m.namaMapel, guru: guru.nama, gasUrl: guru.gasUrl });
     });
   });
 
@@ -577,28 +645,28 @@ async function simpanCPKeState() {
 
   localStorage.setItem(STORAGE_KEY_CP, JSON.stringify(DB_CP_STORE));
 
-  // Kirim sinkronisasi ke Google Apps Script (GAS)
-  try {
-    fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: "save_cp",
-        kelas: activeKelasWali,
-        data: payloadList
-      })
-    }).catch(() => {});
-  } catch (err) {
-    console.warn("GAS save warning:", err);
+  // Simpan ke GAS Guru Pertama (atau GAS Utama)
+  const primaryGasUrl = DATA_GURU_MAPEL[0]?.gasUrl;
+  if (primaryGasUrl && primaryGasUrl.trim() !== '') {
+    try {
+      fetch(primaryGasUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: "save_cp",
+          kelas: activeKelasWali,
+          data: payloadList
+        })
+      }).catch(() => {});
+    } catch (err) {
+      console.warn("GAS save CP warning:", err);
+    }
   }
 
   alert(`Capaian Pembelajaran (CP) untuk Kelas ${activeKelasWali} berhasil disimpan!`);
 }
 
-/**
- * Validasi CP Wajib Diisi Sebelum Cetak
- */
 function validateCPIsi() {
   let allMapelList = [];
   DATA_GURU_MAPEL.forEach(guru => {
@@ -666,10 +734,9 @@ function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
 }
 
 /**
- * 3. CETAK RAPOR PDF WALI KELAS (VALIDASI CP WAJIB ISI & LEBAR 50%)
+ * 3. CETAK RAPOR PDF WALI KELAS
  */
 async function cetakPDFRaporSiswa() {
-  // Validasi: Wajib isi Capaian Pembelajaran
   if (!validateCPIsi()) return;
 
   const container = document.getElementById('print-section-rapor-lengkap');
@@ -724,16 +791,13 @@ async function cetakPDFRaporSiswa() {
     });
 
     pageWrapper.innerHTML = `
-      <!-- WATERMARK LOGO SEKOLAH -->
       <img src="${WATERMARK_LOGO_FILE}" 
            alt="Watermark" 
            class="watermark-img" 
            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 380px; max-width: 80%; height: auto; opacity: 0.15; z-index: 99; pointer-events: none; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" 
       />
 
-      <!-- KONTEN DOKUMEN RAPOR -->
       <div style="position: relative; z-index: 1;">
-        <!-- JUDUL RAPOR & NAMA SEKOLAH -->
         <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 14px; line-height: 1.3;">
           <div>LAPORAN HASIL BELAJAR (RAPOR)</div>
           <div>SMK Muhammadiyah 5 Karanganyar</div>
@@ -741,7 +805,6 @@ async function cetakPDFRaporSiswa() {
           <div style="font-size: 11pt; font-weight: 600; margin-top: 2px;">Kelas / Fase : ${siswa.kelas} / ${fase}, Semester : ${semester}</div>
         </div>
 
-        <!-- IDENTITAS SISWA -->
         <div style="font-size: 11pt; font-weight: bold; margin-bottom: 12px; line-height: 1.4;">
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
@@ -767,7 +830,6 @@ async function cetakPDFRaporSiswa() {
           </table>
         </div>
 
-        <!-- TABEL 1: DAFTAR NILAI MAPEL (KOLOM KOMPETENSI LEBAR 50%) -->
         <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 14px;">
           <thead>
             <tr style="background-color: #f3f4f6;">
@@ -782,7 +844,6 @@ async function cetakPDFRaporSiswa() {
           </tbody>
         </table>
 
-        <!-- TABEL 2 & 3: EKSTRAKURIKULER & KETIDAKHADIRAN -->
         <div style="display: flex; gap: 14px; margin-bottom: 20px;">
           <div style="flex: 1;">
             <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt;">
@@ -834,7 +895,6 @@ async function cetakPDFRaporSiswa() {
           </div>
         </div>
 
-        <!-- TANDA TANGAN RAPOR -->
         <div style="display: flex; justify-content: space-between; font-size: 10pt; margin-top: 15px;">
           <div style="text-align: center; width: 200px;">
             <div>Mengetahui,</div>
@@ -878,7 +938,7 @@ async function cetakPDFRaporSiswa() {
 }
 
 /**
- * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER (VALIDASI CP WAJIB ISI)
+ * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER
  */
 function downloadExcelRaporWali() {
   if (!validateCPIsi()) return;
