@@ -91,7 +91,6 @@
         </div>
 
         <div class="grid grid-cols-2 gap-4">
-          <!-- Menu 1: Data Siswa -->
           <button onclick="goToPage('siswa')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-green transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-brand-greenLight text-brand-green flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-student"></i>
@@ -102,7 +101,6 @@
             </div>
           </button>
 
-          <!-- Menu 2: Data Guru -->
           <button onclick="showUnderDevelopment('Data Guru')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-yellow transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-brand-yellowLight text-brand-yellow flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-chalkboard-teacher"></i>
@@ -113,7 +111,6 @@
             </div>
           </button>
 
-          <!-- Menu 3: Data Alumni -->
           <button onclick="showUnderDevelopment('Data Alumni')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-slate-400 transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-graduation-cap"></i>
@@ -124,7 +121,6 @@
             </div>
           </button>
 
-          <!-- Menu 4: Rapot (Tahap 4) -->
           <button onclick="goToPage('rapot_guru')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-red transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-red-50 text-brand-red flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-book-open"></i>
@@ -242,9 +238,7 @@
           </div>
         </div>
 
-        <div id="grid-guru-cards" class="grid grid-cols-1 gap-3.5">
-          <!-- Diisi via renderGuruCards() di rapot.js -->
-        </div>
+        <div id="grid-guru-cards" class="grid grid-cols-1 gap-3.5"></div>
       </section>
 
       <!-- ============================================== -->
@@ -265,9 +259,7 @@
           <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Mata Pelajaran & Rombel</span>
         </div>
 
-        <div id="list-mapel-cards" class="flex flex-col gap-3">
-          <!-- Diisi via renderMapelCards() di rapot.js -->
-        </div>
+        <div id="list-mapel-cards" class="flex flex-col gap-3"></div>
       </section>
 
       <!-- ============================================== -->
@@ -283,19 +275,17 @@
             </div>
           </div>
 
-          <!-- Baris 1: Tahun Pelajaran (Read Only) -->
           <div class="flex flex-col gap-1">
             <label class="text-xs font-bold text-slate-600 uppercase">Tahun Pelajaran</label>
             <input type="text" id="input-tapel" value="2026/2027" readonly class="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm md:text-base font-bold text-slate-700 cursor-not-allowed select-none" />
           </div>
 
-          <!-- Baris 2: Pilih Kelas & Jenis Nilai -->
           <div class="grid grid-cols-2 gap-2.5">
             <div class="flex flex-col gap-1">
               <label for="select-rapot-kelas" class="text-xs font-bold text-slate-600 uppercase">Pilih Kelas</label>
               <div class="relative">
                 <select id="select-rapot-kelas" onchange="handleKelasNilaiChange()" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-xs md:text-sm font-bold text-slate-800 focus:outline-none focus:border-brand-green appearance-none cursor-pointer">
-                  <!-- Diisi via populateSelectKelasInput() di rapot.js -->
+                  <!-- Diisi otomatis dari data sheet -->
                 </select>
                 <i class="ph-bold ph-caret-down absolute right-2.5 top-1/2 -translate-y-1/2 text-base text-slate-500 pointer-events-none"></i>
               </div>
@@ -315,7 +305,6 @@
             </div>
           </div>
 
-          <!-- Tombol Download Excel Lengkap -->
           <div class="pt-1">
             <button onclick="downloadExcelRapotInput()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-emerald-200 transition-all">
               <i class="ph-bold ph-file-xls text-xl"></i>
@@ -332,11 +321,15 @@
                 <tr class="bg-slate-100 border-b border-slate-200 text-slate-700 text-xs md:text-sm font-bold">
                   <th class="py-3 px-2 text-center w-10">No</th>
                   <th class="py-3 px-3">Nama Siswa</th>
-                  <th class="py-3 px-2 text-center w-24">Nilai (0-100)</th>
+                  <!-- Header Revisi: Nilai 2 Digit & Panduan -->
+                  <th class="py-2.5 px-2 text-center w-28">
+                    <div class="font-bold text-slate-800 leading-tight">Nilai (2 digit)</div>
+                    <div class="text-[10px] font-semibold text-slate-500 mt-0.5">Hanya angka & 2 digit</div>
+                  </th>
                 </tr>
               </thead>
               <tbody id="tbody-input-nilai" class="divide-y divide-slate-100 text-slate-800 text-sm md:text-base">
-                <!-- Diisi via renderTabelInputNilai() di rapot.js -->
+                <!-- Diisi via renderTabelInputNilai() -->
               </tbody>
             </table>
           </div>
@@ -358,9 +351,7 @@
 
     </main>
 
-    <!-- ============================================== -->
-    <!-- SECTION 3: MODAL DETAIL BIODATA SISWA          -->
-    <!-- ============================================== -->
+    <!-- SECTION 3: MODAL DETAIL BIODATA SISWA -->
     <div id="modal-detail" class="fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-0 md:p-4 opacity-0 pointer-events-none transition-opacity duration-200 no-print">
       <div id="modal-content" class="w-full max-w-md bg-white rounded-t-3xl md:rounded-3xl p-6 shadow-2xl flex flex-col gap-4 transform translate-y-full md:scale-95 transition-transform duration-300">
         <div class="flex items-center justify-between border-b pb-3">
