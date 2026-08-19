@@ -21,7 +21,6 @@ let exitTimeout = null;
 document.addEventListener('DOMContentLoaded', () => {
   history.replaceState({ page: 'dashboard' }, 'Dashboard', '');
 
-  // Muat cache data siswa secara instan
   const cachedSiswa = localStorage.getItem(STORAGE_KEY_SISWA);
   if (cachedSiswa) {
     try {
@@ -30,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
       renderTableScreen(DATA_SISWA);
       renderTablePrint(DATA_SISWA);
 
-      // Sinkronkan ke modul rapot jika data cache ada
       if (typeof onDataSiswaUpdated === 'function') {
         onDataSiswaUpdated();
       }
@@ -39,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Sinkronkan data siswa dari Google Sheet di background
   fetchDataFromGAS(false);
 });
 
@@ -79,7 +76,6 @@ async function fetchDataFromGAS(isManualRefresh = false) {
       populateClassFilter(DATA_SISWA);
       filterDataSiswa();
 
-      // Sinkronkan data live ke modul rapot seketika
       if (typeof onDataSiswaUpdated === 'function') {
         onDataSiswaUpdated();
       }
@@ -278,6 +274,10 @@ function cetakPDFSiswa() {
   document.getElementById('print-date-info').innerText = `Waktu Cetak: ${formattedDate}`;
   document.getElementById('print-sign-date').innerText = `Dicetak, ${now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`;
 
+  // Pastikan area print rapor wali kelas disembunyikan
+  const printRaporLengkap = document.getElementById('print-section-rapor-lengkap');
+  if (printRaporLengkap) printRaporLengkap.classList.add('hidden');
+
   window.print();
 }
 
@@ -295,6 +295,8 @@ function applyViewState(state) {
   const viewRapotGuru = document.getElementById('view-rapot-guru');
   const viewRapotMapel = document.getElementById('view-rapot-mapel');
   const viewRapotInput = document.getElementById('view-rapot-input');
+  const viewRapotWali = document.getElementById('view-rapot-walikelas');
+  const viewRapotCetakWali = document.getElementById('view-rapot-cetak-wali');
 
   const btnBack = document.getElementById('btn-header-back');
   const headerTitle = document.getElementById('header-title');
@@ -310,6 +312,8 @@ function applyViewState(state) {
   viewRapotGuru.classList.add('hidden');
   viewRapotMapel.classList.add('hidden');
   viewRapotInput.classList.add('hidden');
+  if (viewRapotWali) viewRapotWali.classList.add('hidden');
+  if (viewRapotCetakWali) viewRapotCetakWali.classList.add('hidden');
   btnBack.classList.remove('hidden');
 
   if (page === 'siswa_detail') {
@@ -332,13 +336,32 @@ function applyViewState(state) {
     return;
   }
 
+  // Rapot Level 1: Pilih Mode / Guru
   if (page === 'rapot_guru') {
     viewRapotGuru.classList.remove('hidden');
-    headerTitle.innerText = "Pilih Guru";
-    headerSubtitle.innerText = "Rapot & Nilai";
+    headerTitle.innerText = "Pilih Mode";
+    headerSubtitle.innerText = "Rapot & Penilaian";
     return;
   }
 
+  // Rapot: Menu Wali Kelas
+  if (page === 'rapot_walikelas') {
+    if (viewRapotWali) viewRapotWali.classList.remove('hidden');
+    headerTitle.innerText = "Wali Kelas";
+    headerSubtitle.innerText = "Pilih Kelas Bimbingan";
+    if (typeof renderKelasWaliCards === 'function') renderKelasWaliCards();
+    return;
+  }
+
+  // Rapot: Cetak Rapor Kelas
+  if (page === 'rapot_cetak_wali') {
+    if (viewRapotCetakWali) viewRapotCetakWali.classList.remove('hidden');
+    headerTitle.innerText = "Cetak Rapor";
+    headerSubtitle.innerText = (typeof activeKelasWali !== 'undefined' && activeKelasWali) ? `Kelas ${activeKelasWali}` : "Rapor";
+    return;
+  }
+
+  // Rapot: Pilih Mapel
   if (page === 'rapot_mapel') {
     viewRapotMapel.classList.remove('hidden');
     headerTitle.innerText = "Mata Pelajaran";
@@ -346,6 +369,7 @@ function applyViewState(state) {
     return;
   }
 
+  // Rapot: Form Input Nilai
   if (page === 'rapot_input') {
     viewRapotInput.classList.remove('hidden');
     headerTitle.innerText = "Input Nilai";
