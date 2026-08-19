@@ -1,0 +1,77 @@
+/* Mengatur perilaku sentuhan dan font bawaan aplikasi */
+body {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* ======================================================= */
+/* SCROLLBAR BIASA: TEBAL, KONTRAS, & JELAS TERLIHAT       */
+/* ======================================================= */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 6px;
+  border: 1.5px solid #e2e8f0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0f172a;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #e2e8f0;
+}
+
+/* ======================================================= */
+/* PENGATURAN CETAK PDF OTOMATIS LANDSCAPE                 */
+/* ======================================================= */
+@page {
+  size: A4 landscape;
+  margin: 10mm 12mm;
+}
+
+@media print {
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: black !important;
+  }
+
+  #app-frame {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  #view-dashboard,
+  #modal-detail,
+  #modal-detail-rapot,
+  #toast-exit {
+    display: none !important;
+  }
+
+  #table-screen-wrapper,
+  #table-rapot-wrapper {
+    display: none !important;
+  }
+}
