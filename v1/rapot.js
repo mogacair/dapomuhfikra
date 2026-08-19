@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * 1. ALUR RAPOT: LANGKAH 1 (PILIH GURU) - TAMPILAN BERSIH TANPA NIP & JUMLAH MAPEL
+ * 1. ALUR RAPOT: LANGKAH 1 (PILIH GURU) - TAMPILAN BERSIH
  */
 function renderGuruCards() {
   const container = document.getElementById('grid-guru-cards');
@@ -175,6 +175,16 @@ function getNilaiStoreKey() {
   return `${activeGuru.id}_${activeMapel.id}_${tapel}_${kelas}_${jenis}`;
 }
 
+/**
+ * Sanitasi Input Nilai: Hanya Angka & Maksimal 2 Digit (Tanpa Titik / Koma)
+ */
+function sanitizeScoreInput(el) {
+  el.value = el.value.replace(/[^0-9]/g, '');
+  if (el.value.length > 2) {
+    el.value = el.value.slice(0, 2);
+  }
+}
+
 function renderTabelInputNilai() {
   const tbody = document.getElementById('tbody-input-nilai');
   const emptyState = document.getElementById('empty-state-input');
@@ -205,10 +215,13 @@ function renderTabelInputNilai() {
         <span class="text-xs font-mono text-slate-500">NISN: ${siswa.nisn}</span>
       </td>
       <td class="py-3 px-2 text-center">
-        <input type="number" min="0" max="100" 
+        <input type="text" 
+          inputmode="numeric" 
+          maxlength="2" 
           id="input-score-${siswa.nisn}" 
           value="${nilaiAwal}" 
-          placeholder="0"
+          placeholder="--"
+          oninput="sanitizeScoreInput(this)"
           class="w-20 text-center font-bold text-base py-2 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-brand-green focus:bg-emerald-50 transition-all bg-white"
         />
       </td>
@@ -226,21 +239,33 @@ function simpanNilaiKeState() {
     DB_NILAI_STORE[storeKey] = {};
   }
 
+  let adaNilaiInvalid = false;
+
   siswaList.forEach(siswa => {
     const inputEl = document.getElementById(`input-score-${siswa.nisn}`);
     if (inputEl) {
       const val = inputEl.value.trim();
+      if (val !== '' && val.length !== 2) {
+        adaNilaiInvalid = true;
+      }
       DB_NILAI_STORE[storeKey][siswa.nisn] = val !== '' ? Number(val) : '';
     }
   });
 
   localStorage.setItem(STORAGE_KEY_NILAI, JSON.stringify(DB_NILAI_STORE));
-  alert(`Berhasil menyimpan nilai untuk kelas ${kelasTerpilih}!`);
+
+  if (adaNilaiInvalid) {
+    alert(`Nilai tersimpan! Catatan: Pastikan nilai yang diinput selalu berupa 2 digit.`);
+  } else {
+    alert(`Berhasil menyimpan nilai untuk kelas ${kelasTerpilih}!`);
+  }
 }
 
 /**
- * 4. DOWNLOAD EXCEL REKAP NILAI DENGAN FORMAT:
- * Tahun Pelajaran - Kelas - Jenis Nilai - Nama Mapel.xlsx
+ * 4. DOWNLOAD EXCEL REKAP NILAI
+ * - Baris 1-4: Kolom A & B di-merge, isian di Kolom C
+ * - Kolom Nilai Praktek (+5 dari Nilai Utama)
+ * - Auto column width & format nama file terstruktur
  */
 function downloadExcelRapotInput() {
   const tapel = document.getElementById('input-tapel').value;
@@ -256,20 +281,25 @@ function downloadExcelRapotInput() {
     return;
   }
 
-  // 1. Susun baris metadata judul atas
+  // 1. Susun baris judul atas (Kolom A: Label, Kolom B: kosong untuk merge, Kolom C: Isian Nilai)
   const sheetData = [
-    ["MATA PELAJARAN", `: ${activeMapel.namaMapel}`],
-    ["GURU PENGAMPU", `: ${activeGuru.nama}`],
-    ["TAHUN PELAJARAN", `: ${tapel}`],
-    ["JENIS PENILAIAN", `: ${jenis} (Kelas ${kelas})`],
+    ["MATA PELAJARAN", "", `: ${activeMapel.namaMapel}`],
+    ["GURU PENGAMPU", "", `: ${activeGuru.nama}`],
+    ["TAHUN PELAJARAN", "", `: ${tapel}`],
+    ["JENIS PENILAIAN", "", `: ${jenis} (Kelas ${kelas})`],
     [], // Baris kosong pemisah
-    ["NO", "NIS / NIPD", "NISN", "NAMA LENGKAP SISWA", "KELAS", "NILAI", "STATUS KKM (75)"]
+    ["NO", "NIS / NIPD", "NISN", "NAMA LENGKAP SISWA", "KELAS", "NILAI", "NILAI PRAKTEK", "STATUS KKM (75)"]
   ];
 
   // 2. Masukkan data tabel siswa
   siswaList.forEach((s, idx) => {
-    const score = savedScores[s.nisn] !== undefined ? savedScores[s.nisn] : '';
-    const status = score !== '' ? (Number(score) >= 75 ? "Tuntas" : "Belum Tuntas") : "Belum Dinilai";
+    const rawScore = savedScores[s.nisn];
+    const hasScore = rawScore !== undefined && rawScore !== '';
+    const scoreNum = hasScore ? Number(rawScore) : null;
+    
+    // Nilai Praktek = Nilai + 5
+    const nilaiPraktek = hasScore ? (scoreNum + 5) : "-";
+    const status = hasScore ? (scoreNum >= 75 ? "Tuntas" : "Belum Tuntas") : "Belum Dinilai";
 
     sheetData.push([
       idx + 1,
@@ -277,21 +307,32 @@ function downloadExcelRapotInput() {
       s.nisn || "-",
       s.nama || "-",
       s.kelas || "-",
-      score !== '' ? Number(score) : "-",
+      hasScore ? scoreNum : "-",
+      nilaiPraktek,
       status
     ]);
   });
 
-  // 3. Buat worksheet dan hitung lebar kolom otomatis
+  // 3. Konversi array ke worksheet SheetJS
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
+  // 4. Merge Kolom A dan B untuk Baris 1 s/d 4 (Index 0 s/d 3)
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }, // Baris 1 (A1:B1)
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, // Baris 2 (A2:B2)
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } }, // Baris 3 (A3:B3)
+    { s: { r: 3, c: 0 }, e: { r: 3, c: 1 } }  // Baris 4 (A4:B4)
+  ];
+
+  // 5. Atur lebar kolom (Auto-Width agar Nama dan Data Utuh)
   ws['!cols'] = [
     { wch: 6 },  // NO
-    { wch: 16 }, // NIS
-    { wch: 18 }, // NISN
-    { wch: 38 }, // NAMA LENGKAP (Cukup lebar agar terlihat utuh)
+    { wch: 16 }, // NIS / NIPD
+    { wch: 20 }, // NISN
+    { wch: 38 }, // NAMA LENGKAP SISWA
     { wch: 12 }, // KELAS
     { wch: 10 }, // NILAI
+    { wch: 16 }, // NILAI PRAKTEK
     { wch: 18 }  // STATUS KKM
   ];
 
