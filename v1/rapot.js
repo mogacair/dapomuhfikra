@@ -248,7 +248,7 @@ function showInputWarningToast(msg) {
   setTimeout(() => {
     toast.classList.remove('opacity-100', 'translate-y-0');
     toast.classList.add('opacity-0', '-translate-y-4');
-  }, 2200);
+  }, 2500);
 }
 
 function renderTabelInputNilai() {
@@ -479,7 +479,7 @@ function selectKelasWali(kelasName) {
   const siswaList = DATA_SISWA.filter(s => s.kelas === kelasName);
   document.getElementById('badge-total-siswa-wali').innerText = `${siswaList.length} Siswa`;
 
-  // Render form input Capaian Pembelajaran (CP) per mapel
+  // Render form input Capaian Pembelajaran (CP)
   renderInputCPMapel(kelasName);
 
   history.pushState({ page: 'rapot_cetak_wali', kelas: kelasName }, 'Cetak Rapor', '');
@@ -487,14 +487,21 @@ function selectKelasWali(kelasName) {
 }
 
 /**
- * Render Input Textarea Capaian Pembelajaran (CP) untuk Setiap Mapel
+ * Buka Pencarian Google untuk Referensi Capaian Pembelajaran Mapel
+ */
+function openReferensiCP(mapelName) {
+  const query = encodeURIComponent(`Capaian Pembelajaran Kurikulum Merdeka ${mapelName} SMK`);
+  window.open(`https://www.google.com/search?q=${query}`, '_blank');
+}
+
+/**
+ * Render Input Textarea CP dengan Tombol Referensi di Kiri Nama Mapel
  */
 function renderInputCPMapel(kelasName) {
   const container = document.getElementById('container-input-cp');
   if (!container) return;
   container.innerHTML = '';
 
-  // Kumpulkan seluruh mapel dari DATA_GURU_MAPEL
   let allMapelList = [];
   DATA_GURU_MAPEL.forEach(guru => {
     guru.mapel.forEach(m => {
@@ -512,17 +519,25 @@ function renderInputCPMapel(kelasName) {
     const savedText = DB_CP_STORE[cpKey] !== undefined ? DB_CP_STORE[cpKey] : defaultText;
 
     const div = document.createElement('div');
-    div.className = "p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col gap-1.5";
+    div.className = "p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col gap-2";
 
     div.innerHTML = `
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-bold text-slate-800">${idx + 1}. ${m.namaMapel}</span>
-        <span class="text-[10px] text-slate-500 font-medium">${m.guruNama}</span>
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <!-- TOMBOL REFERANSI GOOGLE DI SEBELAH KIRI NAMA MAPEL -->
+          <button onclick="openReferensiCP('${m.namaMapel}')" 
+                  title="Cari referensi Capaian Pembelajaran di Google"
+                  class="bg-sky-100 hover:bg-sky-200 text-sky-700 text-[11px] font-extrabold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 active:scale-95 transition-all shadow-sm">
+            <i class="ph-bold ph-magnifying-glass text-xs"></i> Referensi
+          </button>
+          <span class="text-xs md:text-sm font-bold text-slate-800">${idx + 1}. ${m.namaMapel}</span>
+        </div>
+        <span class="text-[11px] text-slate-500 font-medium">${m.guruNama}</span>
       </div>
       <textarea 
         id="textarea-cp-${m.mapelId}" 
         rows="2" 
-        placeholder="Tuliskan capaian pembelajaran / kompetensi siswa..."
+        placeholder="Tuliskan capaian pembelajaran / kompetensi siswa (wajib diisi)..."
         class="w-full text-xs md:text-sm p-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-green transition-all leading-relaxed"
       >${savedText}</textarea>
     `;
@@ -531,24 +546,82 @@ function renderInputCPMapel(kelasName) {
   });
 }
 
-function simpanCPKeState() {
+/**
+ * Simpan Deskripsi CP ke LocalStorage dan Kirim ke Google Apps Script (Backend)
+ */
+async function simpanCPKeState() {
   let allMapelList = [];
   DATA_GURU_MAPEL.forEach(guru => {
     guru.mapel.forEach(m => {
-      allMapelList.push(m.id);
+      allMapelList.push({ id: m.id, mapel: m.namaMapel, guru: guru.nama });
     });
   });
 
-  allMapelList.forEach(mapelId => {
-    const el = document.getElementById(`textarea-cp-${mapelId}`);
+  const payloadList = [];
+
+  allMapelList.forEach(m => {
+    const el = document.getElementById(`textarea-cp-${m.id}`);
     if (el) {
-      const cpKey = `${activeKelasWali}_${mapelId}`;
-      DB_CP_STORE[cpKey] = el.value.trim();
+      const val = el.value.trim();
+      const cpKey = `${activeKelasWali}_${m.id}`;
+      DB_CP_STORE[cpKey] = val;
+      payloadList.push({
+        kelas: activeKelasWali,
+        mapelId: m.id,
+        mapelNama: m.mapel,
+        guruNama: m.guru,
+        capaian: val
+      });
     }
   });
 
   localStorage.setItem(STORAGE_KEY_CP, JSON.stringify(DB_CP_STORE));
+
+  // Kirim sinkronisasi ke Google Apps Script (GAS)
+  try {
+    fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: "save_cp",
+        kelas: activeKelasWali,
+        data: payloadList
+      })
+    }).catch(() => {});
+  } catch (err) {
+    console.warn("GAS save warning:", err);
+  }
+
   alert(`Capaian Pembelajaran (CP) untuk Kelas ${activeKelasWali} berhasil disimpan!`);
+}
+
+/**
+ * Validasi CP Wajib Diisi Sebelum Cetak
+ */
+function validateCPIsi() {
+  let allMapelList = [];
+  DATA_GURU_MAPEL.forEach(guru => {
+    guru.mapel.forEach(m => {
+      allMapelList.push(m);
+    });
+  });
+
+  for (let m of allMapelList) {
+    const cpKey = `${activeKelasWali}_${m.id}`;
+    const el = document.getElementById(`textarea-cp-${m.id}`);
+    const val = el ? el.value.trim() : (DB_CP_STORE[cpKey] ? DB_CP_STORE[cpKey].trim() : '');
+    
+    if (!val || val === '') {
+      showInputWarningToast(`Capaian Pembelajaran untuk [${m.namaMapel}] belum diisi!`);
+      if (el) {
+        el.focus();
+        el.classList.add('border-red-500', 'bg-red-50');
+      }
+      return false;
+    }
+  }
+  return true;
 }
 
 function getCapaianKompetensi(kelasName, mapelId) {
@@ -593,9 +666,12 @@ function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
 }
 
 /**
- * 3. CETAK RAPOR PDF WALI KELAS (KOLOM KOMPETENSI LEBAR 50% & WATERMARK)
+ * 3. CETAK RAPOR PDF WALI KELAS (VALIDASI CP WAJIB ISI & LEBAR 50%)
  */
 async function cetakPDFRaporSiswa() {
+  // Validasi: Wajib isi Capaian Pembelajaran
+  if (!validateCPIsi()) return;
+
   const container = document.getElementById('print-section-rapor-lengkap');
   if (!container) return;
   container.innerHTML = '';
@@ -624,7 +700,6 @@ async function cetakPDFRaporSiswa() {
     });
   });
 
-  // Susun lembar rapor per siswa
   siswaList.forEach((siswa, sIdx) => {
     const pageWrapper = document.createElement('div');
     pageWrapper.className = sIdx < siswaList.length - 1 
@@ -803,9 +878,11 @@ async function cetakPDFRaporSiswa() {
 }
 
 /**
- * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER
+ * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER (VALIDASI CP WAJIB ISI)
  */
 function downloadExcelRaporWali() {
+  if (!validateCPIsi()) return;
+
   const siswaList = DATA_SISWA.filter(s => s.kelas === activeKelasWali);
 
   if (siswaList.length === 0) {
