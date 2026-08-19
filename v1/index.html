@@ -283,11 +283,13 @@
             </div>
           </div>
 
+          <!-- Baris 1: Tahun Pelajaran (Read Only) -->
           <div class="flex flex-col gap-1">
             <label class="text-xs font-bold text-slate-600 uppercase">Tahun Pelajaran</label>
             <input type="text" id="input-tapel" value="2026/2027" readonly class="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm md:text-base font-bold text-slate-700 cursor-not-allowed select-none" />
           </div>
 
+          <!-- Baris 2: Pilih Kelas & Jenis Nilai -->
           <div class="grid grid-cols-2 gap-2.5">
             <div class="flex flex-col gap-1">
               <label for="select-rapot-kelas" class="text-xs font-bold text-slate-600 uppercase">Pilih Kelas</label>
@@ -313,19 +315,16 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-2 pt-1">
-            <button onclick="downloadExcelRapotInput()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-3 rounded-xl font-bold text-xs md:text-sm flex items-center justify-center gap-1.5 active:scale-95 shadow transition-all">
-              <i class="ph-bold ph-file-xls text-lg"></i>
-              <span>Excel</span>
-            </button>
-
-            <button onclick="cetakPDFRapotInput()" class="bg-brand-red hover:bg-brand-redDark text-white py-2.5 px-3 rounded-xl font-bold text-xs md:text-sm flex items-center justify-center gap-1.5 active:scale-95 shadow transition-all">
-              <i class="ph-bold ph-printer text-lg"></i>
-              <span>Cetak PDF</span>
+          <!-- Tombol Download Excel Lengkap -->
+          <div class="pt-1">
+            <button onclick="downloadExcelRapotInput()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-emerald-200 transition-all">
+              <i class="ph-bold ph-file-xls text-xl"></i>
+              <span>Download Excel Rekap Nilai</span>
             </button>
           </div>
         </div>
 
+        <!-- Tabel Input Nilai Siswa -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -353,45 +352,6 @@
             <i class="ph-bold ph-floppy-disk text-xl"></i>
             <span>Simpan Nilai Kelas Ini</span>
           </button>
-        </div>
-
-        <!-- Area Cetak Dokumen PDF Nilai Landscape -->
-        <div id="print-section-rapot-input" class="hidden">
-          <div class="text-center border-b-2 border-black pb-3 mb-4">
-            <h2 class="text-2xl font-bold tracking-wide uppercase">DAPODIK MUHFIKRA - LEMBAR NILAI RAPOT</h2>
-            <p id="print-input-subtitle" class="text-sm font-semibold text-gray-800 mt-0.5">Tahun Pelajaran: 2026/2027 | Mapel: -</p>
-            <div class="flex justify-between items-center text-xs font-medium text-gray-700 mt-2 px-2">
-              <span id="print-input-filter-info">Kelas: - | Asesmen: -</span>
-              <span id="print-input-date-info">Dicetak pada: -</span>
-            </div>
-          </div>
-
-          <table class="w-full border-collapse border border-black text-xs">
-            <thead>
-              <tr class="bg-gray-200 text-black font-bold">
-                <th class="border border-black p-2 text-center w-8">No</th>
-                <th class="border border-black p-2 text-center w-24">NIS / NIPD</th>
-                <th class="border border-black p-2 text-left w-56">Nama Siswa</th>
-                <th class="border border-black p-2 text-center w-16">Kelas</th>
-                <th class="border border-black p-2 text-center w-20">Nilai</th>
-                <th class="border border-black p-2 text-center w-24">Status KKM (75)</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-print-input-nilai"></tbody>
-          </table>
-
-          <div class="mt-8 flex justify-between items-end text-xs">
-            <div>
-              <p>Standar Kelulusan KKM: <strong>75</strong></p>
-              <p id="print-input-stat-summary">Total Siswa: 0 | Rata-rata: 0</p>
-            </div>
-            <div class="text-center w-56">
-              <p id="print-input-sign-date">Dicetak, ....................</p>
-              <p class="font-bold mt-1 mb-16">Guru Pengampu Mata Pelajaran</p>
-              <p id="print-input-sign-name" class="font-bold underline">( _________________________ )</p>
-              <p class="text-[10px] text-gray-600">NIP/NUPTK. ....................................</p>
-            </div>
-          </div>
         </div>
 
       </section>
@@ -465,7 +425,6 @@
 
   </div>
 
-  <!-- LOAD JAVASCRIPT MODULAR -->
   <script src="app.js"></script>
   <script src="rapot.js"></script>
 </body>
