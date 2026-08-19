@@ -274,7 +274,6 @@ function cetakPDFSiswa() {
   document.getElementById('print-date-info').innerText = `Waktu Cetak: ${formattedDate}`;
   document.getElementById('print-sign-date').innerText = `Dicetak, ${now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`;
 
-  // Pastikan area print rapor wali kelas disembunyikan
   const printRaporLengkap = document.getElementById('print-section-rapor-lengkap');
   if (printRaporLengkap) printRaporLengkap.classList.add('hidden');
 
@@ -336,7 +335,6 @@ function applyViewState(state) {
     return;
   }
 
-  // Rapot Level 1: Pilih Mode / Guru
   if (page === 'rapot_guru') {
     viewRapotGuru.classList.remove('hidden');
     headerTitle.innerText = "Pilih Mode";
@@ -344,7 +342,6 @@ function applyViewState(state) {
     return;
   }
 
-  // Rapot: Menu Wali Kelas
   if (page === 'rapot_walikelas') {
     if (viewRapotWali) viewRapotWali.classList.remove('hidden');
     headerTitle.innerText = "Wali Kelas";
@@ -353,7 +350,6 @@ function applyViewState(state) {
     return;
   }
 
-  // Rapot: Cetak Rapor Kelas
   if (page === 'rapot_cetak_wali') {
     if (viewRapotCetakWali) viewRapotCetakWali.classList.remove('hidden');
     headerTitle.innerText = "Cetak Rapor";
@@ -361,7 +357,6 @@ function applyViewState(state) {
     return;
   }
 
-  // Rapot: Pilih Mapel
   if (page === 'rapot_mapel') {
     viewRapotMapel.classList.remove('hidden');
     headerTitle.innerText = "Mata Pelajaran";
@@ -369,7 +364,6 @@ function applyViewState(state) {
     return;
   }
 
-  // Rapot: Form Input Nilai
   if (page === 'rapot_input') {
     viewRapotInput.classList.remove('hidden');
     headerTitle.innerText = "Input Nilai";
