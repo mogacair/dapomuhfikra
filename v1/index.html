@@ -91,7 +91,7 @@
         </div>
 
         <div class="grid grid-cols-2 gap-4">
-          <!-- Menu Data Siswa -->
+          <!-- Menu 1: Data Siswa -->
           <button onclick="goToPage('siswa')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-green transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-brand-greenLight text-brand-green flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-student"></i>
@@ -102,7 +102,7 @@
             </div>
           </button>
 
-          <!-- Menu Data Guru -->
+          <!-- Menu 2: Data Guru -->
           <button onclick="showUnderDevelopment('Data Guru')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-yellow transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-brand-yellowLight text-brand-yellow flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-chalkboard-teacher"></i>
@@ -113,7 +113,7 @@
             </div>
           </button>
 
-          <!-- Menu Data Alumni -->
+          <!-- Menu 3: Data Alumni -->
           <button onclick="showUnderDevelopment('Data Alumni')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-slate-400 transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-graduation-cap"></i>
@@ -124,7 +124,7 @@
             </div>
           </button>
 
-          <!-- Menu Rapot (Tahap 4) -->
+          <!-- Menu 4: Rapot (Tahap 4) -->
           <button onclick="goToPage('rapot_guru')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-red transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-red-50 text-brand-red flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-book-open"></i>
@@ -242,9 +242,8 @@
           </div>
         </div>
 
-        <!-- Grid Cardboard Nama-Nama Guru -->
         <div id="grid-guru-cards" class="grid grid-cols-1 gap-3.5">
-          <!-- Diisi via renderGuruCards() -->
+          <!-- Diisi via renderGuruCards() di rapot.js -->
         </div>
       </section>
 
@@ -252,7 +251,6 @@
       <!-- SECTION 4B: RAPOT - DAFTAR MAPEL GURU          -->
       <!-- ============================================== -->
       <section id="view-rapot-mapel" class="hidden p-4 md:p-5 flex flex-col gap-4 animate-fade-in pb-12">
-        <!-- Banner Info Guru Terpilih -->
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
             <span class="text-xs font-bold text-brand-green uppercase tracking-wider block">Guru Pengampu</span>
@@ -267,9 +265,8 @@
           <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Mata Pelajaran & Rombel</span>
         </div>
 
-        <!-- List Card Mapel -->
         <div id="list-mapel-cards" class="flex flex-col gap-3">
-          <!-- Diisi via renderMapelCards() -->
+          <!-- Diisi via renderMapelCards() di rapot.js -->
         </div>
       </section>
 
@@ -278,7 +275,6 @@
       <!-- ============================================== -->
       <section id="view-rapot-input" class="hidden p-4 md:p-5 flex flex-col gap-4 animate-fade-in pb-16">
         
-        <!-- Form Filter & Pengaturan Penilaian (No Print) -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3.5 no-print">
           <div class="border-b pb-2 flex items-center justify-between">
             <div>
@@ -287,19 +283,17 @@
             </div>
           </div>
 
-          <!-- Baris 1: Tahun Pelajaran (Read Only) -->
           <div class="flex flex-col gap-1">
             <label class="text-xs font-bold text-slate-600 uppercase">Tahun Pelajaran</label>
             <input type="text" id="input-tapel" value="2026/2027" readonly class="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm md:text-base font-bold text-slate-700 cursor-not-allowed select-none" />
           </div>
 
-          <!-- Baris 2: Pilih Kelas & Jenis Nilai -->
           <div class="grid grid-cols-2 gap-2.5">
             <div class="flex flex-col gap-1">
               <label for="select-rapot-kelas" class="text-xs font-bold text-slate-600 uppercase">Pilih Kelas</label>
               <div class="relative">
                 <select id="select-rapot-kelas" onchange="handleKelasNilaiChange()" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-xs md:text-sm font-bold text-slate-800 focus:outline-none focus:border-brand-green appearance-none cursor-pointer">
-                  <!-- Diisi via populateSelectKelasInput() -->
+                  <!-- Diisi via populateSelectKelasInput() di rapot.js -->
                 </select>
                 <i class="ph-bold ph-caret-down absolute right-2.5 top-1/2 -translate-y-1/2 text-base text-slate-500 pointer-events-none"></i>
               </div>
@@ -319,7 +313,6 @@
             </div>
           </div>
 
-          <!-- Tombol Aksi: Simpan, Export Excel, Cetak PDF -->
           <div class="grid grid-cols-2 gap-2 pt-1">
             <button onclick="downloadExcelRapotInput()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-3 rounded-xl font-bold text-xs md:text-sm flex items-center justify-center gap-1.5 active:scale-95 shadow transition-all">
               <i class="ph-bold ph-file-xls text-lg"></i>
@@ -333,7 +326,6 @@
           </div>
         </div>
 
-        <!-- Tabel Input Nilai Siswa -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -345,7 +337,7 @@
                 </tr>
               </thead>
               <tbody id="tbody-input-nilai" class="divide-y divide-slate-100 text-slate-800 text-sm md:text-base">
-                <!-- Diisi via renderTabelInputNilai() -->
+                <!-- Diisi via renderTabelInputNilai() di rapot.js -->
               </tbody>
             </table>
           </div>
@@ -356,7 +348,6 @@
           </div>
         </div>
 
-        <!-- Tombol Simpan Nilai Floating/Bottom -->
         <div class="no-print">
           <button onclick="simpanNilaiKeState()" class="w-full bg-brand-green hover:bg-brand-greenDark text-white py-3.5 px-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-emerald-200 transition-all">
             <i class="ph-bold ph-floppy-disk text-xl"></i>
@@ -474,6 +465,8 @@
 
   </div>
 
+  <!-- LOAD JAVASCRIPT MODULAR -->
   <script src="app.js"></script>
+  <script src="rapot.js"></script>
 </body>
 </html>
