@@ -8,9 +8,9 @@
 const STORAGE_KEY_NILAI = "DAPODIK_NILAI_INPUT_CACHE";
 
 // ============================================================
-// KONFIGURASI LOGO WATERMARK RAPOR (BISA DIGANTI URL/FILE ANDA)
+// KONFIGURASI FILE WATERMARK LOGO SEKOLAH
 // ============================================================
-const WATERMARK_LOGO_URL = "Asset12.png";
+const WATERMARK_LOGO_FILE = "Asset12.png";
 
 // Data Master Guru & Mapel yang Diampu
 const DATA_GURU_MAPEL = [
@@ -522,7 +522,7 @@ function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
 }
 
 /**
- * 3. CETAK RAPOR PDF WALI KELAS (WATERMARK 520px x 520px DI TENGAH, LAYER ATAS)
+ * 3. CETAK RAPOR PDF WALI KELAS (DENGAN TAG <img> WATERMARK LOKAL PASTI MUNCUL)
  */
 function cetakPDFRaporSiswa() {
   const container = document.getElementById('print-section-rapor-lengkap');
@@ -578,8 +578,10 @@ function cetakPDFRaporSiswa() {
     });
 
     pageWrapper.innerHTML = `
-      <!-- WATERMARK LOGO SEKOLAH (520px x 520px, TENGAH, LAYER PALING ATAS) -->
-      <div class="watermark-bg" style="background-image: url('${WATERMARK_LOGO_URL}');"></div>
+      <!-- ============================================================ -->
+      <!-- WATERMARK LOGO SEKOLAH (TAG IMG, LAYER PALING ATAS, 15% OPACITY) -->
+      <!-- ============================================================ -->
+      <img src="${WATERMARK_LOGO_FILE}" alt="Logo Watermark" class="watermark-img" />
 
       <!-- KONTEN DOKUMEN RAPOR -->
       <div style="position: relative; z-index: 1;">
