@@ -8,9 +8,9 @@
 const STORAGE_KEY_NILAI = "DAPODIK_NILAI_INPUT_CACHE";
 
 // ============================================================
-// KONFIGURASI FILE WATERMARK LOGO SEKOLAH
+// KONFIGURASI FILE WATERMARK LOGO SEKOLAH (PATH RELATIF)
 // ============================================================
-const WATERMARK_LOGO_FILE = "Asset12.png";
+const WATERMARK_LOGO_FILE = "./Asset12.png";
 
 // Data Master Guru & Mapel yang Diampu
 const DATA_GURU_MAPEL = [
@@ -522,9 +522,9 @@ function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
 }
 
 /**
- * 3. CETAK RAPOR PDF WALI KELAS (DENGAN TAG <img> WATERMARK LOKAL PASTI MUNCUL)
+ * 3. CETAK RAPOR PDF WALI KELAS (ASYNC PRELOAD WATERMARK AGAR 100% MUNCUL)
  */
-function cetakPDFRaporSiswa() {
+async function cetakPDFRaporSiswa() {
   const container = document.getElementById('print-section-rapor-lengkap');
   if (!container) return;
   container.innerHTML = '';
@@ -553,6 +553,7 @@ function cetakPDFRaporSiswa() {
     });
   });
 
+  // Susun lembar rapor per siswa
   siswaList.forEach((siswa, sIdx) => {
     const pageWrapper = document.createElement('div');
     pageWrapper.className = sIdx < siswaList.length - 1 
@@ -579,9 +580,13 @@ function cetakPDFRaporSiswa() {
 
     pageWrapper.innerHTML = `
       <!-- ============================================================ -->
-      <!-- WATERMARK LOGO SEKOLAH (TAG IMG, LAYER PALING ATAS, 15% OPACITY) -->
+      <!-- WATERMARK LOGO SEKOLAH (INLINE STYLE TENGAH, LAYER PALING ATAS, 15% OPACITY) -->
       <!-- ============================================================ -->
-      <img src="${WATERMARK_LOGO_FILE}" alt="Logo Watermark" class="watermark-img" />
+      <img src="${WATERMARK_LOGO_FILE}" 
+           alt="Watermark" 
+           class="watermark-img" 
+           style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 380px; max-width: 80%; height: auto; opacity: 0.15; z-index: 99; pointer-events: none; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;" 
+      />
 
       <!-- KONTEN DOKUMEN RAPOR -->
       <div style="position: relative; z-index: 1;">
@@ -712,7 +717,25 @@ function cetakPDFRaporSiswa() {
   });
 
   container.classList.remove('hidden');
-  window.print();
+
+  // PRELOAD & DECODE GAMBAR WATERMARK AGAR BROWSER MEMUAT SEBELUM CETAK
+  try {
+    const images = Array.from(container.querySelectorAll('img.watermark-img'));
+    await Promise.all(images.map(img => {
+      if (img.complete) return img.decode ? img.decode().catch(() => {}) : Promise.resolve();
+      return new Promise(resolve => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+      });
+    }));
+  } catch (e) {
+    console.warn("Preload watermark warning:", e);
+  }
+
+  // Beri jeda 100ms agar rendering buffer selesai
+  setTimeout(() => {
+    window.print();
+  }, 100);
 }
 
 /**
