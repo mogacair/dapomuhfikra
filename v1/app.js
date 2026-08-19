@@ -1,73 +1,63 @@
 /**
  * ============================================================
- * DAPODIK MUHFIKRA - TAHAP 1 (DATA SISWA) & TAHAP 4 (RAPOT)
+ * DAPODIK MUHFIKRA - TAHAP 1 (DATA SISWA) & TAHAP 4 (RAPOT FLOW)
  * File: app.js
  * ============================================================
  */
 
-// URL Web App Google Apps Script Data Siswa
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxXWxCZ1TnX6oxk-Vx5d7ouIZ3tbxJojHclmEVzHLp_A9_YixKPqqj9TL3OyGj89oysfw/exec";
 const STORAGE_KEY_SISWA = "DAPODIK_SISWA_CACHE";
-const STORAGE_KEY_RAPOT = "DAPODIK_RAPOT_CACHE";
+const STORAGE_KEY_NILAI = "DAPODIK_NILAI_INPUT_CACHE";
 
-// Penampung data master
+// Data Master Siswa
 let DATA_SISWA = [];
-let DATA_RAPOT_MASTER = []; // Database rapot seluruh guru & sheet
 
-// Variabel kontrol exit double-back di dashboard
-let exitAppPending = false;
-let exitTimeout = null;
-
-/**
- * STRUKTUR DUMMY DATA RAPOT (TAHAP 4)
- * Meniru konsep: 1 File Spreadsheet per Guru, Multi-Sheet Rombel per File
- */
-const DUMMY_RAPOT_DATABASE = [
-  // Spreadsheet Guru: Bpk. Hendra Gunawan, S.Kom
+// Data Master Guru & Mapel yang Diampu (1 File Spreadsheet per Guru, Multi-Sheet Mapel)
+const DATA_GURU_MAPEL = [
   {
-    guru: "Hendra Gunawan, S.Kom",
-    sheet: "2026/2027 Dasar TJKT",
-    data: [
-      { id: "R1", jenis: "PTS Ganjil", nama: "Ahmad Faiz Al-Ghifari", kelas: "X-TJKT-1", mapel: "Dasar-Dasar TJKT", nilai: 88 },
-      { id: "R2", jenis: "PTS Ganjil", nama: "Aisyah Putri Azzahra", kelas: "X-TJKT-1", mapel: "Dasar-Dasar TJKT", nilai: 92 },
-      { id: "R3", jenis: "PTS Ganjil", nama: "Bagas Pratama Wicaksono", kelas: "X-TJKT-1", mapel: "Dasar-Dasar TJKT", nilai: 70 },
-      { id: "R4", jenis: "SAS Ganjil", nama: "Ahmad Faiz Al-Ghifari", kelas: "X-TJKT-1", mapel: "Dasar-Dasar TJKT", nilai: 85 },
-      { id: "R5", jenis: "SAS Ganjil", nama: "Aisyah Putri Azzahra", kelas: "X-TJKT-1", mapel: "Dasar-Dasar TJKT", nilai: 95 },
-      { id: "R6", jenis: "SAS Ganjil", nama: "Bagas Pratama Wicaksono", kelas: "X-TJKT-1", mapel: "Dasar-Dasar TJKT", nilai: 78 },
-      { id: "R7", jenis: "PTS Genap", nama: "Ahmad Faiz Al-Ghifari", kelas: "X-TJKT-1", mapel: "Dasar-Dasar TJKT", nilai: 90 },
-      { id: "R8", jenis: "SAS Genap", nama: "Ahmad Faiz Al-Ghifari", kelas: "X-TJKT-1", mapel: "Dasar-Dasar TJKT", nilai: 91 }
+    id: "G1",
+    nama: "Hendra Gunawan, S.Kom",
+    nip: "198705122011011003",
+    mapel: [
+      { id: "M1", namaMapel: "Dasar-Dasar TJKT", sheetName: "2026/2027 Dasar TJKT", kelasTarget: ["VII-A", "VII-B", "X-TJKT-1"] },
+      { id: "M2", namaMapel: "Administrasi Jaringan Komputer", sheetName: "2026/2027 Jaringan Komputer", kelasTarget: ["VIII-A", "VIII-B", "XI-TJKT-2"] }
     ]
   },
   {
-    guru: "Hendra Gunawan, S.Kom",
-    sheet: "2026/2027 Jaringan Komputer",
-    data: [
-      { id: "R9", jenis: "PTS Ganjil", nama: "Fatimah Zahra Rahmawati", kelas: "XI-TJKT-2", mapel: "Administrasi Jaringan", nilai: 84 },
-      { id: "R10", jenis: "PTS Ganjil", nama: "Muhammad Rizky Ramadhan", kelas: "XI-TJKT-2", mapel: "Administrasi Jaringan", nilai: 68 },
-      { id: "R11", jenis: "SAS Ganjil", nama: "Fatimah Zahra Rahmawati", kelas: "XI-TJKT-2", mapel: "Administrasi Jaringan", nilai: 88 },
-      { id: "R12", jenis: "SAS Ganjil", nama: "Muhammad Rizky Ramadhan", kelas: "XI-TJKT-2", mapel: "Administrasi Jaringan", nilai: 76 }
+    id: "G2",
+    nama: "Sri Wahyuni, S.Pd",
+    nip: "199103242019022005",
+    mapel: [
+      { id: "M3", namaMapel: "Pemasaran & Bisnis Digital", sheetName: "2026/2027 BISNIS DIGITAL", kelasTarget: ["VII-A", "VIII-A", "IX-A"] },
+      { id: "M4", namaMapel: "Ekonomi Bisnis", sheetName: "2026/2027 EKONOMI BISNIS", kelasTarget: ["VIII-A", "VIII-B"] }
     ]
   },
-  // Spreadsheet Guru: Ibu Sri Wahyuni, S.Pd
   {
-    guru: "Sri Wahyuni, S.Pd",
-    sheet: "2026/2027 BISNIS DIGITAL",
-    data: [
-      { id: "R13", jenis: "PTS Ganjil", nama: "Zaskia Nur Azizah", kelas: "X-BD-1", mapel: "Pemasaran Digital", nilai: 94 },
-      { id: "R14", jenis: "PTS Ganjil", nama: "Dimas Aditya Pratama", kelas: "X-BD-1", mapel: "Pemasaran Digital", nilai: 72 },
-      { id: "R15", jenis: "SAS Ganjil", nama: "Zaskia Nur Azizah", kelas: "X-BD-1", mapel: "Pemasaran Digital", nilai: 96 },
-      { id: "R16", jenis: "SAS Ganjil", nama: "Dimas Aditya Pratama", kelas: "X-BD-1", mapel: "Pemasaran Digital", nilai: 80 }
+    id: "G3",
+    nama: "Ahmad Fauzi, M.Pd",
+    nip: "198508172010011012",
+    mapel: [
+      { id: "M5", namaMapel: "Matematika Kejuruan", sheetName: "2026/2027 MATEMATIKA", kelasTarget: ["VII-A", "VII-B", "VIII-A", "VIII-B", "IX-A"] }
     ]
   }
 ];
 
+// State Penilaian Aktif
+let activeGuru = null;
+let activeMapel = null;
+let DB_NILAI_STORE = {}; // Menyimpan skor input: key = `${guruId}_${mapelId}_${tapel}_${kelas}_${jenis}`
+
+// Kontrol Double-Back
+let exitAppPending = false;
+let exitTimeout = null;
+
 /**
- * 1. INISIALISASI APLIKASI
+ * 1. INISIALISASI
  */
 document.addEventListener('DOMContentLoaded', () => {
   history.replaceState({ page: 'dashboard' }, 'Dashboard', '');
-  
-  // 1. Muat Cache Data Siswa
+
+  // Muat cache data siswa
   const cachedSiswa = localStorage.getItem(STORAGE_KEY_SISWA);
   if (cachedSiswa) {
     try {
@@ -80,16 +70,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 2. Inisialisasi Data Rapot
-  DATA_RAPOT_MASTER = DUMMY_RAPOT_DATABASE;
-  initRapotView();
+  // Muat cache nilai input
+  const cachedNilai = localStorage.getItem(STORAGE_KEY_NILAI);
+  if (cachedNilai) {
+    try {
+      DB_NILAI_STORE = JSON.parse(cachedNilai);
+    } catch (e) {}
+  }
 
-  // 3. Sinkronkan Data Siswa dari GAS
+  // Render cardboard daftar guru
+  renderGuruCards();
+
+  // Sinkronkan data siswa dari Google Sheet
   fetchDataFromGAS(false);
 });
 
 /**
- * 2. AMBIL DATA SISWA DARI GOOGLE APPS SCRIPT (GAS)
+ * 2. AMBIL DATA SISWA DARI GAS
  */
 async function fetchDataFromGAS(isManualRefresh = false) {
   const tbodyScreen = document.getElementById('tbody-siswa');
@@ -143,327 +140,290 @@ async function fetchDataFromGAS(isManualRefresh = false) {
 }
 
 /**
- * 3. LOGIKA MENU RAPOT / NILAI (TAHAP 4)
+ * 3. ALUR RAPOT TAHAP 4: LANGKAH 1 (PILIH GURU)
  */
-function initRapotView() {
-  const selectGuru = document.getElementById('filter-rapot-guru');
-  if (!selectGuru) return;
+function renderGuruCards() {
+  const container = document.getElementById('grid-guru-cards');
+  if (!container) return;
+  container.innerHTML = '';
 
-  // Dapatkan daftar nama guru unik
-  const guruList = [...new Set(DATA_RAPOT_MASTER.map(item => item.guru))];
+  DATA_GURU_MAPEL.forEach(guru => {
+    const card = document.createElement('div');
+    card.className = "bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-brand-red transition-all cursor-pointer active:scale-95 flex items-center justify-between";
+    card.onclick = () => selectGuru(guru.id);
 
-  selectGuru.innerHTML = '';
-  guruList.forEach((guru, idx) => {
-    const opt = document.createElement('option');
-    opt.value = guru;
-    opt.innerText = guru;
-    if (idx === 0) opt.selected = true;
-    selectGuru.appendChild(opt);
+    card.innerHTML = `
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-red-50 text-brand-red flex items-center justify-center text-2xl font-bold">
+          <i class="ph-fill ph-chalkboard-teacher"></i>
+        </div>
+        <div>
+          <h4 class="font-bold text-base text-slate-900 leading-snug">${guru.nama}</h4>
+          <p class="text-xs text-slate-500 mt-0.5">NIP: ${guru.nip}</p>
+          <span class="inline-block bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded mt-1">
+            ${guru.mapel.length} Mata Pelajaran
+          </span>
+        </div>
+      </div>
+      <i class="ph-bold ph-caret-right text-slate-400 text-xl"></i>
+    `;
+    container.appendChild(card);
   });
+}
 
-  handleGuruChange();
+function selectGuru(guruId) {
+  const guru = DATA_GURU_MAPEL.find(g => g.id === guruId);
+  if (!guru) return;
+
+  activeGuru = guru;
+  document.getElementById('label-guru-terpilih').innerText = guru.nama;
+
+  renderMapelCards(guru);
+
+  history.pushState({ page: 'rapot_mapel', guruId: guruId }, 'Pilih Mapel', '');
+  applyViewState({ page: 'rapot_mapel', guruId: guruId });
 }
 
 /**
- * Saat Guru dipilih, perbarui daftar Sheet Rombel
+ * 4. ALUR RAPOT TAHAP 4: LANGKAH 2 (PILIH MAPEL)
  */
-function handleGuruChange() {
-  const selectedGuru = document.getElementById('filter-rapot-guru').value;
-  const selectSheet = document.getElementById('filter-rapot-sheet');
-  if (!selectSheet) return;
+function renderMapelCards(guru) {
+  const container = document.getElementById('list-mapel-cards');
+  if (!container) return;
+  container.innerHTML = '';
 
-  // Filter sheets milik guru terpilih
-  const sheetsMilikoGuru = DATA_RAPOT_MASTER.filter(item => item.guru === selectedGuru);
+  guru.mapel.forEach(m => {
+    const card = document.createElement('div');
+    card.className = "bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-brand-green transition-all cursor-pointer active:scale-95 flex items-center justify-between";
+    card.onclick = () => selectMapel(m.id);
 
-  selectSheet.innerHTML = '<option value="ALL">Semua Sheet Rombel</option>';
-  sheetsMilikoGuru.forEach(item => {
-    const opt = document.createElement('option');
-    opt.value = item.sheet;
-    opt.innerText = item.sheet;
-    selectSheet.appendChild(opt);
+    card.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl bg-brand-greenLight text-brand-green flex items-center justify-center text-2xl font-bold">
+          <i class="ph-fill ph-book-bookmark"></i>
+        </div>
+        <div>
+          <h4 class="font-bold text-base text-slate-900">${m.namaMapel}</h4>
+          <p class="text-xs font-mono text-emerald-700 font-medium mt-0.5">Sheet: ${m.sheetName}</p>
+        </div>
+      </div>
+      <i class="ph-bold ph-caret-right text-slate-400 text-xl"></i>
+    `;
+    container.appendChild(card);
   });
+}
 
-  // Perbarui juga pilihan kelas unik untuk guru ini
-  populateRapotKelasFilter(sheetsMilikoGuru);
-  filterDataRapot();
+function selectMapel(mapelId) {
+  if (!activeGuru) return;
+  const mapel = activeGuru.mapel.find(m => m.id === mapelId);
+  if (!mapel) return;
+
+  activeMapel = mapel;
+
+  document.getElementById('badge-mapel-nama').innerText = mapel.namaMapel;
+  document.getElementById('label-input-guru-mapel').innerText = `${activeGuru.nama} (${mapel.sheetName})`;
+
+  populateSelectKelasInput();
+  renderTabelInputNilai();
+
+  history.pushState({ page: 'rapot_input', mapelId: mapelId }, 'Input Nilai', '');
+  applyViewState({ page: 'rapot_input', mapelId: mapelId });
 }
 
 /**
- * Mengisi dropdown kelas khusus rapot
+ * 5. ALUR RAPOT TAHAP 4: LANGKAH 3 (FORM INPUT NILAI SISWA)
  */
-function populateRapotKelasFilter(sheetsList) {
-  const selectKelas = document.getElementById('filter-rapot-kelas');
-  if (!selectKelas) return;
+function populateSelectKelasInput() {
+  const select = document.getElementById('select-rapot-kelas');
+  if (!select) return;
 
-  let allRows = [];
-  sheetsList.forEach(s => {
-    allRows = allRows.concat(s.data);
-  });
+  // Ambil kelas unik dari Data Siswa
+  const kelasSiswa = [...new Set(DATA_SISWA.map(s => s.kelas).filter(k => k))].sort();
+  const optionsKelas = kelasSiswa.length > 0 ? kelasSiswa : ["VII-A", "VII-B", "VIII-A", "VIII-B", "IX-A"];
 
-  const kelasList = [...new Set(allRows.map(r => r.kelas).filter(k => k))].sort();
-
-  selectKelas.innerHTML = '<option value="ALL">Semua Kelas</option>';
-  kelasList.forEach(kls => {
+  select.innerHTML = '';
+  optionsKelas.forEach((kls, idx) => {
     const opt = document.createElement('option');
     opt.value = kls;
     opt.innerText = `Kelas ${kls}`;
-    selectKelas.appendChild(opt);
+    if (idx === 0) opt.selected = true;
+    select.appendChild(opt);
   });
 }
 
-/**
- * Filter dan Render Tabel Rapot
- */
-function filterDataRapot() {
-  const selectedGuru = document.getElementById('filter-rapot-guru').value;
-  const selectedSheet = document.getElementById('filter-rapot-sheet').value;
-  const selectedJenis = document.getElementById('filter-rapot-jenis').value;
-  const selectedKelas = document.getElementById('filter-rapot-kelas').value;
-
-  // Kumpulkan baris nilai sesuai guru & sheet
-  let filteredRows = [];
-  const sheetsGuru = DATA_RAPOT_MASTER.filter(item => item.guru === selectedGuru);
-
-  sheetsGuru.forEach(s => {
-    if (selectedSheet === 'ALL' || s.sheet === selectedSheet) {
-      s.data.forEach(row => {
-        filteredRows.push({
-          ...row,
-          guru: s.guru,
-          sheet: s.sheet
-        });
-      });
-    }
-  });
-
-  // Filter jenis nilai
-  if (selectedJenis !== 'ALL') {
-    filteredRows = filteredRows.filter(r => r.jenis === selectedJenis);
-  }
-
-  // Filter kelas
-  if (selectedKelas !== 'ALL') {
-    filteredRows = filteredRows.filter(r => r.kelas === selectedKelas);
-  }
-
-  // Update Badge Count
-  const badgeCount = document.getElementById('rapot-count-badge');
-  if (badgeCount) badgeCount.innerText = `${filteredRows.length} Nilai`;
-
-  // Update Statistik Nilai
-  calculateRapotStats(filteredRows);
-
-  // Render ke tabel layar & cetak
-  renderTableRapotScreen(filteredRows);
-  renderTableRapotPrint(filteredRows, selectedGuru, selectedSheet, selectedJenis, selectedKelas);
+function handleKelasNilaiChange() {
+  renderTabelInputNilai();
 }
 
-/**
- * Hitung Rata-Rata, Nilai Tertinggi, Nilai Terendah
- */
-function calculateRapotStats(rows) {
-  const avgEl = document.getElementById('stat-rapot-avg');
-  const maxEl = document.getElementById('stat-rapot-max');
-  const minEl = document.getElementById('stat-rapot-min');
-
-  if (rows.length === 0) {
-    avgEl.innerText = "0";
-    maxEl.innerText = "0";
-    minEl.innerText = "0";
-    return;
-  }
-
-  const scores = rows.map(r => Number(r.nilai) || 0);
-  const sum = scores.reduce((a, b) => a + b, 0);
-  const avg = (sum / scores.length).toFixed(1);
-  const max = Math.max(...scores);
-  const min = Math.min(...scores);
-
-  avgEl.innerText = avg;
-  maxEl.innerText = max;
-  minEl.innerText = min;
+function handleJenisNilaiChange() {
+  renderTabelInputNilai();
 }
 
-/**
- * Render Tabel Rapot di Layar HP / Komputer
- */
-function renderTableRapotScreen(rows) {
-  const tbody = document.getElementById('tbody-rapot');
-  const emptyState = document.getElementById('empty-state-rapot');
+function getNilaiStoreKey() {
+  const tapel = document.getElementById('input-tapel').value;
+  const kelas = document.getElementById('select-rapot-kelas').value;
+  const jenis = document.getElementById('select-rapot-jenis').value;
+  return `${activeGuru.id}_${activeMapel.id}_${tapel}_${kelas}_${jenis}`;
+}
+
+function renderTabelInputNilai() {
+  const tbody = document.getElementById('tbody-input-nilai');
+  const emptyState = document.getElementById('empty-state-input');
+  const kelasTerpilih = document.getElementById('select-rapot-kelas').value;
+  const storeKey = getNilaiStoreKey();
+  const savedScores = DB_NILAI_STORE[storeKey] || {};
+
   tbody.innerHTML = '';
 
-  if (rows.length === 0) {
+  // Filter siswa berdasarkan kelas terpilih
+  const siswaList = DATA_SISWA.filter(s => s.kelas === kelasTerpilih);
+
+  if (siswaList.length === 0) {
     emptyState.classList.remove('hidden');
     return;
   }
 
   emptyState.classList.add('hidden');
 
-  rows.forEach((item, index) => {
-    const isTuntas = item.nilai >= 75;
-    const badgeColor = isTuntas ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700';
-
+  siswaList.forEach((siswa, index) => {
+    const nilaiAwal = savedScores[siswa.nisn] !== undefined ? savedScores[siswa.nisn] : '';
     const tr = document.createElement('tr');
-    tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100 cursor-pointer";
-    tr.onclick = () => openModalDetailRapot(item.id);
+    tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100";
 
     tr.innerHTML = `
       <td class="py-3 px-2 text-center font-bold text-slate-500">${index + 1}</td>
-      <td class="py-3 px-2.5">
-        <span class="font-bold text-slate-900 text-sm md:text-base block leading-snug">${item.nama}</span>
-        <span class="text-[11px] text-slate-500 font-medium block">${item.mapel} (${item.kelas})</span>
+      <td class="py-3 px-3">
+        <span class="font-bold text-slate-900 text-sm md:text-base block">${siswa.nama}</span>
+        <span class="text-xs font-mono text-slate-500">NISN: ${siswa.nisn}</span>
       </td>
       <td class="py-3 px-2 text-center">
-        <span class="inline-block bg-slate-100 text-slate-700 text-[11px] font-bold px-2 py-0.5 rounded-md">
-          ${item.jenis}
-        </span>
-      </td>
-      <td class="py-3 px-2 text-center">
-        <span class="inline-block ${badgeColor} text-xs md:text-sm font-extrabold px-2.5 py-1 rounded-lg">
-          ${item.nilai}
-        </span>
+        <input type="number" min="0" max="100" 
+          id="input-score-${siswa.nisn}" 
+          value="${nilaiAwal}" 
+          placeholder="0"
+          class="w-20 text-center font-bold text-base py-2 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-brand-green focus:bg-emerald-50 transition-all bg-white"
+        />
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-/**
- * Render Tabel Dokumen Cetak Rapot Landscape
- */
-function renderTableRapotPrint(rows, guru, sheet, jenis, kelas) {
-  const tbodyPrint = document.getElementById('tbody-print-rapot');
-  if (!tbodyPrint) return;
-  tbodyPrint.innerHTML = '';
+function simpanNilaiKeState() {
+  const kelasTerpilih = document.getElementById('select-rapot-kelas').value;
+  const siswaList = DATA_SISWA.filter(s => s.kelas === kelasTerpilih);
+  const storeKey = getNilaiStoreKey();
 
-  document.getElementById('print-rapot-subtitle').innerText = `Guru Pengampu: ${guru} | Rombel: ${sheet}`;
-  document.getElementById('print-rapot-filter-info').innerText = `Filter Jenis: ${jenis} | Kelas: ${kelas}`;
-  document.getElementById('print-rapot-sign-name').innerText = `( ${guru} )`;
-
-  const scores = rows.map(r => Number(r.nilai) || 0);
-  const avg = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 0;
-  document.getElementById('print-rapot-stat-summary').innerText = `Total Nilai Siswa: ${rows.length} | Rata-rata Kelas: ${avg}`;
-
-  rows.forEach((item, index) => {
-    const isTuntas = item.nilai >= 75;
-    const tr = document.createElement('tr');
-    tr.className = index % 2 === 0 ? "bg-white" : "bg-gray-50";
-
-    tr.innerHTML = `
-      <td class="border border-black p-1.5 text-center font-bold">${index + 1}</td>
-      <td class="border border-black p-1.5 text-center font-semibold">${item.jenis}</td>
-      <td class="border border-black p-1.5 font-bold">${item.nama}</td>
-      <td class="border border-black p-1.5 text-center font-semibold">${item.kelas}</td>
-      <td class="border border-black p-1.5">${item.mapel}</td>
-      <td class="border border-black p-1.5 text-center font-bold">${item.nilai}</td>
-      <td class="border border-black p-1.5 text-center font-medium ${isTuntas ? 'text-black' : 'text-red-600 font-bold'}">${isTuntas ? 'Tuntas' : 'Remedial'}</td>
-    `;
-    tbodyPrint.appendChild(tr);
-  });
-}
-
-/**
- * Buka Popup Modal Detail Nilai Rapot (Level 3)
- */
-function openModalDetailRapot(id) {
-  // Cari data nilai rapot berdasarkan ID
-  let item = null;
-  DATA_RAPOT_MASTER.forEach(g => {
-    const found = g.data.find(d => d.id === id);
-    if (found) {
-      item = { ...found, guru: g.guru, sheet: g.sheet };
-    }
-  });
-
-  if (!item) return;
-
-  const isTuntas = item.nilai >= 75;
-  const statusBadge = document.getElementById('det-rapot-status-badge');
-
-  document.getElementById('det-rapot-nama').innerText = item.nama;
-  document.getElementById('det-rapot-kelas').innerText = item.kelas;
-  document.getElementById('det-rapot-jenis').innerText = item.jenis;
-  document.getElementById('det-rapot-mapel').innerText = item.mapel;
-  document.getElementById('det-rapot-nilai').innerText = item.nilai;
-  document.getElementById('det-rapot-guru').innerText = `${item.guru} (${item.sheet})`;
-
-  if (isTuntas) {
-    statusBadge.innerText = "TUNTAS (Memenuhi KKM)";
-    statusBadge.className = "inline-block px-3 py-1 rounded-full text-xs font-extrabold mt-1 bg-emerald-100 text-emerald-800";
-  } else {
-    statusBadge.innerText = "BELUM TUNTAS (Remedial)";
-    statusBadge.className = "inline-block px-3 py-1 rounded-full text-xs font-extrabold mt-1 bg-red-100 text-red-700";
+  if (!DB_NILAI_STORE[storeKey]) {
+    DB_NILAI_STORE[storeKey] = {};
   }
 
-  history.pushState({ page: 'rapot_detail', id: id }, 'Detail Rapot', '');
-  applyViewState({ page: 'rapot_detail', id: id });
-}
-
-/**
- * Download Excel Nilai Rapot (.xlsx)
- */
-function downloadExcelRapot() {
-  const selectedGuru = document.getElementById('filter-rapot-guru').value;
-  const selectedSheet = document.getElementById('filter-rapot-sheet').value;
-  const selectedJenis = document.getElementById('filter-rapot-jenis').value;
-  const selectedKelas = document.getElementById('filter-rapot-kelas').value;
-
-  let rowsToExport = [];
-  const sheetsGuru = DATA_RAPOT_MASTER.filter(item => item.guru === selectedGuru);
-
-  sheetsGuru.forEach(s => {
-    if (selectedSheet === 'ALL' || s.sheet === selectedSheet) {
-      s.data.forEach(r => {
-        if ((selectedJenis === 'ALL' || r.jenis === selectedJenis) && (selectedKelas === 'ALL' || r.kelas === selectedKelas)) {
-          rowsToExport.push({
-            "No": rowsToExport.length + 1,
-            "Jenis Nilai": r.jenis,
-            "Nama Siswa": r.nama,
-            "Kelas": r.kelas,
-            "Mata Pelajaran": r.mapel,
-            "Nilai": r.nilai,
-            "Status KKM (75)": r.nilai >= 75 ? "Tuntas" : "Belum Tuntas",
-            "Guru Pengampu": s.guru,
-            "Rombel / Sheet": s.sheet
-          });
-        }
-      });
+  siswaList.forEach(siswa => {
+    const inputEl = document.getElementById(`input-score-${siswa.nisn}`);
+    if (inputEl) {
+      const val = inputEl.value.trim();
+      DB_NILAI_STORE[storeKey][siswa.nisn] = val !== '' ? Number(val) : '';
     }
   });
 
-  if (rowsToExport.length === 0) {
-    alert("Tidak ada data nilai rapot untuk di-export.");
+  localStorage.setItem(STORAGE_KEY_NILAI, JSON.stringify(DB_NILAI_STORE));
+  alert(`Berhasil menyimpan nilai untuk kelas ${kelasTerpilih}!`);
+}
+
+/**
+ * 6. EXPORT EXCEL & PDF FORM INPUT NILAI
+ */
+function downloadExcelRapotInput() {
+  const tapel = document.getElementById('input-tapel').value;
+  const kelas = document.getElementById('select-rapot-kelas').value;
+  const jenis = document.getElementById('select-rapot-jenis').value;
+  const storeKey = getNilaiStoreKey();
+  const savedScores = DB_NILAI_STORE[storeKey] || {};
+
+  const siswaList = DATA_SISWA.filter(s => s.kelas === kelas);
+
+  if (siswaList.length === 0) {
+    alert("Tidak ada data siswa untuk kelas ini.");
     return;
   }
 
-  const ws = XLSX.utils.json_to_sheet(rowsToExport);
-  const wb = XLSX.utils.book_new();
-  const safeSheetName = selectedSheet === 'ALL' ? 'Rekap Nilai' : selectedSheet.substring(0, 30);
-  XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+  const exportRows = siswaList.map((s, idx) => {
+    const score = savedScores[s.nisn] !== undefined ? savedScores[s.nisn] : '';
+    return {
+      "No": idx + 1,
+      "Tahun Pelajaran": tapel,
+      "Guru Pengampu": activeGuru.nama,
+      "Mata Pelajaran": activeMapel.namaMapel,
+      "Jenis Nilai": jenis,
+      "Kelas": s.kelas,
+      "NISN": s.nisn,
+      "Nama Siswa": s.nama,
+      "Nilai": score,
+      "Status KKM (75)": score !== '' ? (Number(score) >= 75 ? "Tuntas" : "Belum Tuntas") : "Belum Dinilai"
+    };
+  });
 
-  const fileName = `Rapot_${selectedGuru.replace(/[^a-zA-Z0-9]/g, '_')}_${selectedSheet.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`;
+  const ws = XLSX.utils.json_to_sheet(exportRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `${kelas}_${jenis}`);
+
+  const fileName = `Nilai_${activeMapel.namaMapel}_${kelas}_${jenis}.xlsx`;
   XLSX.writeFile(wb, fileName);
 }
 
-/**
- * Download / Cetak PDF Dokumen Rapot
- */
-function cetakPDFRapot() {
-  const now = new Date();
-  const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  
-  document.getElementById('print-rapot-date-info').innerText = `Waktu Cetak: ${now.toLocaleDateString('id-ID', options)}`;
-  document.getElementById('print-rapot-sign-date').innerText = `Dicetak, ${now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+function cetakPDFRapotInput() {
+  const tapel = document.getElementById('input-tapel').value;
+  const kelas = document.getElementById('select-rapot-kelas').value;
+  const jenis = document.getElementById('select-rapot-jenis').value;
+  const storeKey = getNilaiStoreKey();
+  const savedScores = DB_NILAI_STORE[storeKey] || {};
 
-  // Tampilkan hanya area print rapot
-  document.getElementById('print-section-rapot').classList.remove('hidden');
+  const siswaList = DATA_SISWA.filter(s => s.kelas === kelas);
+  const tbodyPrint = document.getElementById('tbody-print-input-nilai');
+  tbodyPrint.innerHTML = '';
+
+  document.getElementById('print-input-subtitle').innerText = `Tahun Pelajaran: ${tapel} | Mapel: ${activeMapel.namaMapel} | Guru: ${activeGuru.nama}`;
+  document.getElementById('print-input-filter-info').innerText = `Kelas: ${kelas} | Jenis Nilai: ${jenis}`;
+  document.getElementById('print-input-sign-name').innerText = `( ${activeGuru.nama} )`;
+
+  const now = new Date();
+  document.getElementById('print-input-date-info').innerText = `Waktu Cetak: ${now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+  document.getElementById('print-input-sign-date').innerText = `Dicetak, ${now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+
+  let scoresOnly = [];
+
+  siswaList.forEach((s, idx) => {
+    const val = savedScores[s.nisn];
+    const scoreText = val !== undefined && val !== '' ? val : '-';
+    if (val !== undefined && val !== '') scoresOnly.push(Number(val));
+
+    const isTuntas = val !== undefined && val !== '' && Number(val) >= 75;
+    const tr = document.createElement('tr');
+    tr.className = idx % 2 === 0 ? "bg-white" : "bg-gray-50";
+
+    tr.innerHTML = `
+      <td class="border border-black p-1.5 text-center font-bold">${idx + 1}</td>
+      <td class="border border-black p-1.5 text-center font-mono">${s.nis || '-'}</td>
+      <td class="border border-black p-1.5 font-bold">${s.nama}</td>
+      <td class="border border-black p-1.5 text-center font-semibold">${s.kelas}</td>
+      <td class="border border-black p-1.5 text-center font-bold">${scoreText}</td>
+      <td class="border border-black p-1.5 text-center font-semibold ${isTuntas ? 'text-black' : 'text-red-600'}">${scoreText !== '-' ? (isTuntas ? 'Tuntas' : 'Remedial') : '-'}</td>
+    `;
+    tbodyPrint.appendChild(tr);
+  });
+
+  const avg = scoresOnly.length > 0 ? (scoresOnly.reduce((a, b) => a + b, 0) / scoresOnly.length).toFixed(1) : 0;
+  document.getElementById('print-input-stat-summary').innerText = `Total Siswa: ${siswaList.length} | Rata-rata Nilai: ${avg}`;
+
+  // Tampilkan hanya area print input rapot
+  document.getElementById('print-section-rapot-input').classList.remove('hidden');
   document.getElementById('print-section-siswa').classList.add('hidden');
 
   window.print();
 }
 
 /**
- * 4. LOGIKA EXPORT & CETAK DATA SISWA (TAHAP 1)
+ * 7. LOGIKA DATA SISWA (TAHAP 1)
  */
 function populateClassFilter(dataList) {
   const select = document.getElementById('filter-kelas');
@@ -627,13 +587,13 @@ function cetakPDFSiswa() {
   document.getElementById('print-sign-date').innerText = `Dicetak, ${now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`;
 
   document.getElementById('print-section-siswa').classList.remove('hidden');
-  document.getElementById('print-section-rapot').classList.add('hidden');
+  document.getElementById('print-section-rapot-input').classList.add('hidden');
 
   window.print();
 }
 
 /**
- * 5. NAVIGASI STACK & HISTORY BROWSER
+ * 8. NAVIGASI STACK VIEW & POPSTATE
  */
 function goToPage(pageName) {
   history.pushState({ page: pageName }, pageName, '');
@@ -643,20 +603,30 @@ function goToPage(pageName) {
 function applyViewState(state) {
   const viewDashboard = document.getElementById('view-dashboard');
   const viewSiswa = document.getElementById('view-siswa');
-  const viewRapot = document.getElementById('view-rapot');
+  const viewRapotGuru = document.getElementById('view-rapot-guru');
+  const viewRapotMapel = document.getElementById('view-rapot-mapel');
+  const viewRapotInput = document.getElementById('view-rapot-input');
+
   const btnBack = document.getElementById('btn-header-back');
   const headerTitle = document.getElementById('header-title');
   const headerSubtitle = document.getElementById('header-subtitle');
 
   const modalSiswa = document.getElementById('modal-detail');
   const modalSiswaContent = document.getElementById('modal-content');
-  const modalRapot = document.getElementById('modal-detail-rapot');
-  const modalRapotContent = document.getElementById('modal-content-rapot');
 
   const page = state ? state.page : 'dashboard';
 
-  // Modal Level 3 (Siswa)
+  // Sembunyikan semua section utama terlebih dahulu
+  viewDashboard.classList.add('hidden');
+  viewSiswa.classList.add('hidden');
+  viewRapotGuru.classList.add('hidden');
+  viewRapotMapel.classList.add('hidden');
+  viewRapotInput.classList.add('hidden');
+  btnBack.classList.remove('hidden');
+
+  // Modal Siswa Detail
   if (page === 'siswa_detail') {
+    viewSiswa.classList.remove('hidden');
     modalSiswa.classList.remove('opacity-0', 'pointer-events-none');
     modalSiswa.classList.add('opacity-100');
     modalSiswaContent.classList.remove('translate-y-full', 'md:scale-95');
@@ -668,58 +638,47 @@ function applyViewState(state) {
   modalSiswa.classList.remove('opacity-100');
   modalSiswa.classList.add('opacity-0', 'pointer-events-none');
 
-  // Modal Level 3 (Rapot)
-  if (page === 'rapot_detail') {
-    modalRapot.classList.remove('opacity-0', 'pointer-events-none');
-    modalRapot.classList.add('opacity-100');
-    modalRapotContent.classList.remove('translate-y-full', 'md:scale-95');
-    modalRapotContent.classList.add('translate-y-0', 'md:scale-100');
-    return;
-  }
-  modalRapotContent.classList.remove('translate-y-0', 'md:scale-100');
-  modalRapotContent.classList.add('translate-y-full', 'md:scale-95');
-  modalRapot.classList.remove('opacity-100');
-  modalRapot.classList.add('opacity-0', 'pointer-events-none');
-
-  // Level 2 (Data Siswa)
+  // Halaman 1: Data Siswa
   if (page === 'siswa') {
-    viewDashboard.classList.add('hidden');
-    viewRapot.classList.add('hidden');
     viewSiswa.classList.remove('hidden');
-    btnBack.classList.remove('hidden');
-
     headerTitle.innerText = "Data Siswa";
     headerSubtitle.innerText = "Dapodik Muhfikra";
     return;
   }
 
-  // Level 2 (Rapot)
-  if (page === 'rapot') {
-    viewDashboard.classList.add('hidden');
-    viewSiswa.classList.add('hidden');
-    viewRapot.classList.remove('hidden');
-    btnBack.classList.remove('hidden');
-
-    headerTitle.innerText = "Rapot & Nilai";
-    headerSubtitle.innerText = "Dapodik Muhfikra";
+  // Rapot Level 1: Pilih Guru
+  if (page === 'rapot_guru') {
+    viewRapotGuru.classList.remove('hidden');
+    headerTitle.innerText = "Pilih Guru";
+    headerSubtitle.innerText = "Rapot & Nilai";
     return;
   }
 
-  // Level 1 (Dashboard Utama)
+  // Rapot Level 2: Pilih Mapel
+  if (page === 'rapot_mapel') {
+    viewRapotMapel.classList.remove('hidden');
+    headerTitle.innerText = "Mata Pelajaran";
+    headerSubtitle.innerText = activeGuru ? activeGuru.nama : "Rapot";
+    return;
+  }
+
+  // Rapot Level 3: Form Input Nilai Siswa
+  if (page === 'rapot_input') {
+    viewRapotInput.classList.remove('hidden');
+    headerTitle.innerText = "Input Nilai";
+    headerSubtitle.innerText = activeMapel ? activeMapel.namaMapel : "Rapot";
+    return;
+  }
+
+  // Default: Dashboard Utama
   if (page === 'dashboard') {
-    viewSiswa.classList.add('hidden');
-    viewRapot.classList.add('hidden');
     viewDashboard.classList.remove('hidden');
     btnBack.classList.add('hidden');
-
     headerTitle.innerText = "DAPODIK MUHFIKRA";
     headerSubtitle.innerText = "Sistem Informasi Akademik";
   }
 }
 
-/**
- * Penanganan Tombol / Gesture Back
- */
 window.addEventListener('popstate', (event) => {
   const state = event.state;
 
