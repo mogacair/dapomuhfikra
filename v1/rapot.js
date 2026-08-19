@@ -12,7 +12,6 @@ const DATA_GURU_MAPEL = [
   {
     id: "G1",
     nama: "Hendra Gunawan, S.Kom",
-    nip: "198705122011011003",
     mapel: [
       { id: "M1", namaMapel: "Dasar-Dasar TJKT", sheetName: "2026/2027 Dasar TJKT", kelasTarget: ["VII-A", "VII-B", "X-TJKT-1"] },
       { id: "M2", namaMapel: "Administrasi Jaringan Komputer", sheetName: "2026/2027 Jaringan Komputer", kelasTarget: ["VIII-A", "VIII-B", "XI-TJKT-2"] }
@@ -21,7 +20,6 @@ const DATA_GURU_MAPEL = [
   {
     id: "G2",
     nama: "Sri Wahyuni, S.Pd",
-    nip: "199103242019022005",
     mapel: [
       { id: "M3", namaMapel: "Pemasaran & Bisnis Digital", sheetName: "2026/2027 BISNIS DIGITAL", kelasTarget: ["VII-A", "VIII-A", "IX-A"] },
       { id: "M4", namaMapel: "Ekonomi Bisnis", sheetName: "2026/2027 EKONOMI BISNIS", kelasTarget: ["VIII-A", "VIII-B"] }
@@ -30,7 +28,6 @@ const DATA_GURU_MAPEL = [
   {
     id: "G3",
     nama: "Ahmad Fauzi, M.Pd",
-    nip: "198508172010011012",
     mapel: [
       { id: "M5", namaMapel: "Matematika Kejuruan", sheetName: "2026/2027 MATEMATIKA", kelasTarget: ["VII-A", "VII-B", "VIII-A", "VIII-B", "IX-A"] }
     ]
@@ -57,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * 1. ALUR RAPOT: LANGKAH 1 (PILIH GURU)
+ * 1. ALUR RAPOT: LANGKAH 1 (PILIH GURU) - TAMPILAN BERSIH TANPA NIP & JUMLAH MAPEL
  */
 function renderGuruCards() {
   const container = document.getElementById('grid-guru-cards');
@@ -75,11 +72,7 @@ function renderGuruCards() {
           <i class="ph-fill ph-chalkboard-teacher"></i>
         </div>
         <div>
-          <h4 class="font-bold text-base text-slate-900 leading-snug">${guru.nama}</h4>
-          <p class="text-xs text-slate-500 mt-0.5">NIP: ${guru.nip}</p>
-          <span class="inline-block bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded mt-1">
-            ${guru.mapel.length} Mata Pelajaran
-          </span>
+          <h4 class="font-bold text-base md:text-lg text-slate-900 leading-snug">${guru.nama}</h4>
         </div>
       </div>
       <i class="ph-bold ph-caret-right text-slate-400 text-xl"></i>
@@ -246,7 +239,8 @@ function simpanNilaiKeState() {
 }
 
 /**
- * 4. DOWNLOAD EXCEL REKAP NILAI DENGAN HEADER IDENTITAS & AUTO-WIDTH NAMA
+ * 4. DOWNLOAD EXCEL REKAP NILAI DENGAN FORMAT:
+ * Tahun Pelajaran - Kelas - Jenis Nilai - Nama Mapel.xlsx
  */
 function downloadExcelRapotInput() {
   const tapel = document.getElementById('input-tapel').value;
@@ -288,10 +282,9 @@ function downloadExcelRapotInput() {
     ]);
   });
 
-  // 3. Buat worksheet dan hitung lebar kolom otomatis (Auto Column Width)
+  // 3. Buat worksheet dan hitung lebar kolom otomatis
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-  // Atur lebar kolom agar nama panjang tidak terpotong
   ws['!cols'] = [
     { wch: 6 },  // NO
     { wch: 16 }, // NIS
@@ -306,6 +299,12 @@ function downloadExcelRapotInput() {
   const safeSheetName = `${kelas}_${jenis}`.substring(0, 31);
   XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
 
-  const fileName = `Nilai_${activeMapel.namaMapel.replace(/[^a-zA-Z0-9]/g, '_')}_${kelas}_${jenis.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`;
+  // Format Nama File: Tahun Pelajaran - Kelas - Jenis Nilai - Nama Mapel.xlsx
+  const safeTapel = tapel.replace(/[\/\\]/g, '-');
+  const safeKelas = kelas.replace(/[\/\\]/g, '-');
+  const safeJenis = jenis.replace(/[\/\\]/g, '-');
+  const safeMapel = activeMapel.namaMapel.replace(/[\/\\]/g, '-');
+
+  const fileName = `${safeTapel} - ${safeKelas} - ${safeJenis} - ${safeMapel}.xlsx`;
   XLSX.writeFile(wb, fileName);
 }
