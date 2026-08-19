@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * DAPODIK MUHFIKRA - MODUL RAPOT & PENILAIAN SISWA (TAHAP 4)
+ * DAPODIK MUHFIKRA - MODUL RAPOT & WALI KELAS (TAHAP 4)
  * File: rapot.js
  * ============================================================
  */
@@ -13,8 +13,8 @@ const DATA_GURU_MAPEL = [
     id: "G1",
     nama: "Hendra Gunawan, S.Kom",
     mapel: [
-      { id: "M1", namaMapel: "Dasar-Dasar TJKT", sheetName: "2026/2027 Dasar TJKT" },
-      { id: "M2", namaMapel: "Administrasi Jaringan Komputer", sheetName: "2026/2027 Jaringan Komputer" }
+      { id: "M1", namaMapel: "Dasar-Dasar Kejuruan", sheetName: "2026/2027 Dasar Kejuruan" },
+      { id: "M2", namaMapel: "Administrasi Sistem & Jaringan", sheetName: "2026/2027 Jaringan Komputer" }
     ]
   },
   {
@@ -29,7 +29,8 @@ const DATA_GURU_MAPEL = [
     id: "G3",
     nama: "Ahmad Fauzi, M.Pd",
     mapel: [
-      { id: "M5", namaMapel: "Matematika Kejuruan", sheetName: "2026/2027 MATEMATIKA" }
+      { id: "M5", namaMapel: "Matematika Kejuruan", sheetName: "2026/2027 MATEMATIKA" },
+      { id: "M6", namaMapel: "Pendidikan Pancasila", sheetName: "2026/2027 PANCASILA" }
     ]
   }
 ];
@@ -37,11 +38,9 @@ const DATA_GURU_MAPEL = [
 // State Penilaian Aktif
 let activeGuru = null;
 let activeMapel = null;
-let DB_NILAI_STORE = {}; // key = `${guruId}_${mapelId}_${tapel}_${kelas}_${jenis}`
+let activeKelasWali = null;
+let DB_NILAI_STORE = {};
 
-/**
- * Inisialisasi Modul Rapot
- */
 document.addEventListener('DOMContentLoaded', () => {
   const cachedNilai = localStorage.getItem(STORAGE_KEY_NILAI);
   if (cachedNilai) {
@@ -53,12 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderGuruCards();
 });
 
-/**
- * FUNGSI SINKRONISASI INSTAN DARI APP.JS
- * Dipanggil otomatis saat fetch data siswa selesai
- */
 function onDataSiswaUpdated() {
   populateSelectKelasInput();
+  renderKelasWaliCards();
   const viewRapotInput = document.getElementById('view-rapot-input');
   if (viewRapotInput && !viewRapotInput.classList.contains('hidden')) {
     renderTabelInputNilai();
@@ -66,7 +62,7 @@ function onDataSiswaUpdated() {
 }
 
 /**
- * 1. ALUR RAPOT: LANGKAH 1 (PILIH GURU)
+ * 1. ALUR GURU PENGAMPU
  */
 function renderGuruCards() {
   const container = document.getElementById('grid-guru-cards');
@@ -106,9 +102,6 @@ function selectGuru(guruId) {
   applyViewState({ page: 'rapot_mapel', guruId: guruId });
 }
 
-/**
- * 2. ALUR RAPOT: LANGKAH 2 (PILIH MAPEL)
- */
 function renderMapelCards(guru) {
   const container = document.getElementById('list-mapel-cards');
   if (!container) return;
@@ -152,15 +145,11 @@ function selectMapel(mapelId) {
   applyViewState({ page: 'rapot_input', mapelId: mapelId });
 }
 
-/**
- * 3. ALUR RAPOT: LANGKAH 3 (FORM INPUT NILAI SISWA)
- */
 function populateSelectKelasInput() {
   const select = document.getElementById('select-rapot-kelas');
   if (!select) return;
 
   const currentVal = select.value;
-  // Ekstrak semua nama kelas unik langsung dari data siswa master
   const kelasSiswa = [...new Set(DATA_SISWA.map(s => s.kelas).filter(k => k && k.trim() !== ""))].sort();
 
   if (kelasSiswa.length === 0) {
@@ -197,21 +186,10 @@ function getNilaiStoreKey() {
   return `${activeGuru.id}_${activeMapel.id}_${tapel}_${kelas}_${jenis}`;
 }
 
-/**
- * SANITASI & VALIDASI KETAT INPUT NILAI:
- * 1. Menolak simbol seperti koma, titik, minus, spasi.
- * 2. Mengubah warna menjadi merah jika hanya 1 digit.
- */
 function handleScoreInput(el) {
-  // Hanya menerima angka 0-9
   el.value = el.value.replace(/[^0-9]/g, '');
+  if (el.value.length > 2) el.value = el.value.slice(0, 2);
 
-  // Batasi maksimal 2 digit
-  if (el.value.length > 2) {
-    el.value = el.value.slice(0, 2);
-  }
-
-  // Cek validasi visual secara real-time
   if (el.value.length === 1) {
     el.classList.add('border-red-500', 'bg-red-50', 'text-red-600');
     el.classList.remove('border-slate-200', 'bg-white', 'text-slate-900');
@@ -221,17 +199,10 @@ function handleScoreInput(el) {
   }
 }
 
-/**
- * BLUR HANDLER: LOCK FOCUS JIKA HANYA 1 DIGIT (TIDAK BISA PINDAH KOLOM)
- */
 function handleScoreBlur(el) {
   if (el.value.length === 1) {
     el.classList.add('border-red-500', 'bg-red-50', 'text-red-600');
-    
-    // Tampilkan notifikasi toast kecil
     showInputWarningToast("Wajib 2 digit angka! (Contoh: 85, 70, 08)");
-    
-    // Kunci fokus agar tidak bisa berpindah kolom
     setTimeout(() => {
       el.focus();
       el.select();
@@ -267,7 +238,6 @@ function renderTabelInputNilai() {
 
   tbody.innerHTML = '';
 
-  // Filter siswa berdasarkan kelas yang dipilih
   const siswaList = DATA_SISWA.filter(s => s.kelas === kelasTerpilih);
 
   if (siswaList.length === 0) {
@@ -321,7 +291,6 @@ function simpanNilaiKeState() {
   const siswaList = DATA_SISWA.filter(s => s.kelas === kelasTerpilih);
   const storeKey = getNilaiStoreKey();
 
-  // Cek apakah masih ada inputan 1 digit
   let adaNilaiInvalid = false;
   let invalidInputEl = null;
 
@@ -358,9 +327,6 @@ function simpanNilaiKeState() {
   alert(`Berhasil menyimpan nilai untuk kelas ${kelasTerpilih}!`);
 }
 
-/**
- * 4. DOWNLOAD EXCEL REKAP NILAI
- */
 function downloadExcelRapotInput() {
   const tapel = document.getElementById('input-tapel').value;
   const kelas = document.getElementById('select-rapot-kelas').value;
@@ -375,7 +341,6 @@ function downloadExcelRapotInput() {
     return;
   }
 
-  // Susun baris judul atas (Kolom A & B dimerge, isian di Kolom C)
   const sheetData = [
     ["MATA PELAJARAN", "", `: ${activeMapel.namaMapel}`],
     ["GURU PENGAMPU", "", `: ${activeGuru.nama}`],
@@ -408,7 +373,6 @@ function downloadExcelRapotInput() {
 
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-  // Merge Kolom A & B pada baris 1 s/d 4
   ws['!merges'] = [
     { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
     { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
@@ -416,16 +380,15 @@ function downloadExcelRapotInput() {
     { s: { r: 3, c: 0 }, e: { r: 3, c: 1 } }
   ];
 
-  // Atur lebar kolom
   ws['!cols'] = [
-    { wch: 6 },  // NO
-    { wch: 16 }, // NIS / NIPD
-    { wch: 20 }, // NISN
-    { wch: 38 }, // NAMA LENGKAP SISWA
-    { wch: 12 }, // KELAS
-    { wch: 10 }, // NILAI
-    { wch: 16 }, // NILAI PRAKTEK
-    { wch: 18 }  // STATUS KKM
+    { wch: 6 },
+    { wch: 16 },
+    { wch: 20 },
+    { wch: 38 },
+    { wch: 12 },
+    { wch: 10 },
+    { wch: 16 },
+    { wch: 18 }
   ];
 
   const wb = XLSX.utils.book_new();
@@ -438,5 +401,333 @@ function downloadExcelRapotInput() {
   const safeMapel = activeMapel.namaMapel.replace(/[\/\\]/g, '-');
 
   const fileName = `${safeTapel} - ${safeKelas} - ${safeJenis} - ${safeMapel}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+}
+
+/**
+ * ============================================================
+ * 2. ALUR MENU WALI KELAS & CETAK RAPOR SISWA (PDF & EXCEL)
+ * ============================================================
+ */
+
+/**
+ * Render Cardboard Daftar Kelas pada Menu Wali Kelas
+ */
+function renderKelasWaliCards() {
+  const container = document.getElementById('list-kelas-wali');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const kelasList = [...new Set(DATA_SISWA.map(s => s.kelas).filter(k => k && k.trim() !== ""))].sort();
+
+  if (kelasList.length === 0) {
+    container.innerHTML = `
+      <div class="p-8 text-center bg-white rounded-2xl border border-slate-200">
+        <i class="ph-duotone ph-chalkboard text-4xl text-slate-400 mb-2"></i>
+        <p class="font-bold text-slate-700">Data kelas belum tersedia</p>
+      </div>
+    `;
+    return;
+  }
+
+  kelasList.forEach(kls => {
+    const jumlahSiswa = DATA_SISWA.filter(s => s.kelas === kls).length;
+    const card = document.createElement('div');
+    card.className = "bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-brand-green transition-all cursor-pointer active:scale-95 flex items-center justify-between";
+    card.onclick = () => selectKelasWali(kls);
+
+    card.innerHTML = `
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-brand-greenLight text-brand-green flex items-center justify-center text-2xl font-bold">
+          <i class="ph-fill ph-chalkboard"></i>
+        </div>
+        <div>
+          <h4 class="font-bold text-base md:text-lg text-slate-900 leading-snug">Kelas ${kls}</h4>
+          <span class="inline-block bg-slate-100 text-slate-700 text-xs font-semibold px-2 py-0.5 rounded mt-1">
+            ${jumlahSiswa} Peserta Didik
+          </span>
+        </div>
+      </div>
+      <i class="ph-bold ph-caret-right text-slate-400 text-xl"></i>
+    `;
+    container.appendChild(card);
+  });
+}
+
+/**
+ * Saat Kelas Bimbingan Diklik oleh Wali Kelas
+ */
+function selectKelasWali(kelasName) {
+  activeKelasWali = kelasName;
+
+  document.getElementById('label-wali-kelas-nama').innerText = `Kelas ${kelasName}`;
+  const siswaList = DATA_SISWA.filter(s => s.kelas === kelasName);
+  document.getElementById('badge-total-siswa-wali').innerText = `${siswaList.length} Siswa`;
+
+  // Render daftar siswa di kelas tersebut
+  const tbody = document.getElementById('tbody-wali-siswa');
+  if (tbody) {
+    tbody.innerHTML = '';
+    siswaList.forEach((s, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="py-2.5 px-3 text-center font-bold text-slate-500">${idx + 1}</td>
+        <td class="py-2.5 px-3 font-bold text-slate-800">${s.nama}</td>
+        <td class="py-2.5 px-3 font-mono text-slate-600 text-xs">${s.nisn || '-'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  history.pushState({ page: 'rapot_cetak_wali', kelas: kelasName }, 'Cetak Rapor', '');
+  applyViewState({ page: 'rapot_cetak_wali', kelas: kelasName });
+}
+
+/**
+ * Helper: Tentukan Konsentrasi Keahlian & Fase Berdasarkan Nama Kelas
+ */
+function getKonsentrasiKeahlian(kelasName) {
+  const klsUpper = (kelasName || "").toUpperCase();
+  if (klsUpper.includes("TKJ") || klsUpper.includes("TJKT")) {
+    return "Teknik Komputer dan Jaringan";
+  }
+  if (klsUpper.includes("TKR") || klsUpper.includes("OTO")) {
+    return "Teknik Kendaraan Ringan";
+  }
+  if (klsUpper.includes("BD") || klsUpper.includes("BISNIS")) {
+    return "Bisnis Digital";
+  }
+  return "Teknik Komputer dan Jaringan"; // Default
+}
+
+function getFaseKelas(kelasName) {
+  const klsUpper = (kelasName || "").toUpperCase();
+  if (klsUpper.startsWith("X-") || klsUpper.startsWith("X ") || klsUpper === "X") {
+    return "E";
+  }
+  return "F";
+}
+
+/**
+ * Helper: Ambil Nilai Teori Siswa untuk Suatu Mapel dari Storage
+ */
+function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
+  const tapel = "2026/2027";
+  const jenis = "PTS Ganjil"; // Baseline
+  const storeKey = `${guruId}_${mapelId}_${tapel}_${kelas}_${jenis}`;
+  const store = DB_NILAI_STORE[storeKey];
+  if (store && store[nisn] !== undefined && store[nisn] !== '') {
+    return Number(store[nisn]);
+  }
+  // Nilai default sampel jika belum diinput guru
+  return 78;
+}
+
+/**
+ * 3. CETAK RAPOR PDF WALI KELAS (1 SISWA PER HALAMAN)
+ */
+function cetakPDFRaporSiswa() {
+  const container = document.getElementById('print-section-rapor-lengkap');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const siswaList = DATA_SISWA.filter(s => s.kelas === activeKelasWali);
+
+  if (siswaList.length === 0) {
+    alert("Tidak ada siswa di kelas ini untuk dicetak rapornya.");
+    return;
+  }
+
+  const tapel = "2026/2027";
+  const semester = "Ganjil";
+  const konsentrasi = getKonsentrasiKeahlian(activeKelasWali);
+  const fase = getFaseKelas(activeKelasWali);
+
+  // Kumpulkan semua mata pelajaran yang ada di sekolah
+  let allMapelList = [];
+  DATA_GURU_MAPEL.forEach(guru => {
+    guru.mapel.forEach(m => {
+      allMapelList.push({
+        guruId: guru.id,
+        guruNama: guru.nama,
+        mapelId: m.id,
+        namaMapel: m.namaMapel
+      });
+    });
+  });
+
+  // Susun Halaman Rapor untuk Setiap Siswa (1 Halaman per Siswa)
+  siswaList.forEach((siswa, sIdx) => {
+    const pageWrapper = document.createElement('div');
+    // Class page-break memastikan tiap siswa ganti kertas otomatis
+    pageWrapper.className = sIdx < siswaList.length - 1 ? "page-break mb-8 text-black" : "text-black";
+
+    let rowsHtml = "";
+    allMapelList.forEach((m, mIdx) => {
+      const nilaiTeori = getNilaiTeoriSiswa(m.guruId, m.mapelId, siswa.kelas, siswa.nisn);
+      const nilaiPraktek = nilaiTeori + 5; // Nilai Praktek = Teori + 5
+      
+      // FORMULA NILAI AKHIR = (75% Nilai Praktek + 25% Nilai Teori) / 2
+      const nilaiAkhir = (((0.75 * nilaiPraktek) + (0.25 * nilaiTeori)) / 2).toFixed(1);
+
+      rowsHtml += `
+        <tr>
+          <td style="border: 1px solid black; padding: 6px; text-align: center;">${mIdx + 1}</td>
+          <td style="border: 1px solid black; padding: 6px; font-weight: 600;">${m.namaMapel}</td>
+          <td style="border: 1px solid black; padding: 6px; text-align: center;">${nilaiTeori}</td>
+          <td style="border: 1px solid black; padding: 6px; text-align: center;">${nilaiPraktek}</td>
+          <td style="border: 1px solid black; padding: 6px; text-align: center; font-weight: bold;">${nilaiAkhir}</td>
+          <td style="border: 1px solid black; padding: 6px; text-align: center;">-</td>
+        </tr>
+      `;
+    });
+
+    pageWrapper.innerHTML = `
+      <!-- JUDUL RAPOR (Center, Bold, 14pt) -->
+      <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 18px; line-height: 1.3;">
+        <div>LAPORAN HASIL BELAJAR (RAPOR)</div>
+        <div style="font-size: 12pt; font-weight: bold; margin-top: 2px;">Tahun Pelajaran : ${tapel}</div>
+        <div style="font-size: 11pt; font-weight: 600; margin-top: 2px;">Kelas / Fase : ${siswa.kelas} / ${fase}, Semester : ${semester}</div>
+      </div>
+
+      <!-- IDENTITAS SISWA (Left, Bold, 12pt) -->
+      <div style="font-size: 11pt; font-weight: bold; margin-bottom: 14px; line-height: 1.5;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="width: 220px; vertical-align: top;">Nama Peserta Didik</td>
+            <td style="width: 15px; vertical-align: top;">:</td>
+            <td style="vertical-align: top; text-transform: uppercase;">${siswa.nama}</td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;">NISN</td>
+            <td style="vertical-align: top;">:</td>
+            <td style="vertical-align: top; font-family: monospace;">${siswa.nisn || '-'}</td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;">Alamat</td>
+            <td style="vertical-align: top;">:</td>
+            <td style="vertical-align: top; font-weight: 500;">${siswa.alamat || '-'}</td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;">Konsentrasi Keahlian</td>
+            <td style="vertical-align: top;">:</td>
+            <td style="vertical-align: top;">${konsentrasi}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- TABEL DAFTAR NILAI MAPEL -->
+      <table style="width: 100%; border-collapse: collapse; font-size: 10pt; margin-bottom: 25px;">
+        <thead>
+          <tr style="background-color: #f3f4f6;">
+            <th style="border: 1px solid black; padding: 7px 4px; text-align: center; width: 35px;">No</th>
+            <th style="border: 1px solid black; padding: 7px 8px; text-align: left;">Mata Pelajaran</th>
+            <th style="border: 1px solid black; padding: 7px 4px; text-align: center; width: 75px;">Nilai Teori</th>
+            <th style="border: 1px solid black; padding: 7px 4px; text-align: center; width: 85px;">Nilai Praktek</th>
+            <th style="border: 1px solid black; padding: 7px 4px; text-align: center; width: 75px;">Nilai Akhir</th>
+            <th style="border: 1px solid black; padding: 7px 4px; text-align: center; width: 130px;">Capaian Kompetensi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+
+      <!-- TANDA TANGAN RAPOR -->
+      <div style="display: flex; justify-content: space-between; font-size: 10pt; margin-top: 30px;">
+        <div style="text-align: center; width: 200px;">
+          <div>Mengetahui,</div>
+          <div style="margin-top: 2px;">Orang Tua / Wali Siswa</div>
+          <div style="height: 60px;"></div>
+          <div style="font-weight: bold; text-decoration: underline;">( ......................................... )</div>
+        </div>
+
+        <div style="text-align: center; width: 220px;">
+          <div>Grogol, 19 Agustus 2026</div>
+          <div style="margin-top: 2px; font-weight: bold;">Wali Kelas</div>
+          <div style="height: 60px;"></div>
+          <div style="font-weight: bold; text-decoration: underline;">( _________________________ )</div>
+          <div style="font-size: 9pt;">NIP. .........................................</div>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(pageWrapper);
+  });
+
+  // Tampilkan container cetak
+  container.classList.remove('hidden');
+
+  // Trigger dialog print
+  window.print();
+}
+
+/**
+ * 4. CETAK RAPOR EXCEL WALI KELAS
+ */
+function downloadExcelRaporWali() {
+  const siswaList = DATA_SISWA.filter(s => s.kelas === activeKelasWali);
+
+  if (siswaList.length === 0) {
+    alert("Tidak ada data siswa untuk di-export.");
+    return;
+  }
+
+  const tapel = "2026/2027";
+  const semester = "Ganjil";
+  const konsentrasi = getKonsentrasiKeahlian(activeKelasWali);
+
+  let allMapelList = [];
+  DATA_GURU_MAPEL.forEach(guru => {
+    guru.mapel.forEach(m => {
+      allMapelList.push({
+        guruId: guru.id,
+        mapelId: m.id,
+        namaMapel: m.namaMapel
+      });
+    });
+  });
+
+  const exportRows = [];
+
+  siswaList.forEach((s, sIdx) => {
+    allMapelList.forEach((m, mIdx) => {
+      const nilaiTeori = getNilaiTeoriSiswa(m.guruId, m.mapelId, s.kelas, s.nisn);
+      const nilaiPraktek = nilaiTeori + 5;
+      const nilaiAkhir = Number((((0.75 * nilaiPraktek) + (0.25 * nilaiTeori)) / 2).toFixed(1));
+
+      exportRows.push({
+        "No": sIdx + 1,
+        "Nama Peserta Didik": s.nama,
+        "NISN": s.nisn || "-",
+        "Kelas": s.kelas,
+        "Konsentrasi Keahlian": konsentrasi,
+        "Mata Pelajaran": m.namaMapel,
+        "Nilai Teori": nilaiTeori,
+        "Nilai Praktek": nilaiPraktek,
+        "Nilai Akhir": nilaiAkhir,
+        "Capaian Kompetensi": ""
+      });
+    });
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportRows);
+  ws['!cols'] = [
+    { wch: 6 },
+    { wch: 35 },
+    { wch: 18 },
+    { wch: 12 },
+    { wch: 30 },
+    { wch: 32 },
+    { wch: 12 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 20 }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `Rapor_${activeKelasWali}`);
+
+  const fileName = `Rapor_Kelas_${activeKelasWali}_${tapel.replace(/[\/\\]/g, '-')}_Semester_${semester}.xlsx`;
   XLSX.writeFile(wb, fileName);
 }
