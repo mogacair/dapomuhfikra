@@ -13,23 +13,23 @@ const DATA_GURU_MAPEL = [
     id: "G1",
     nama: "Hendra Gunawan, S.Kom",
     mapel: [
-      { id: "M1", namaMapel: "Dasar-Dasar TJKT", sheetName: "2026/2027 Dasar TJKT", kelasTarget: ["VII-A", "VII-B", "X-TJKT-1"] },
-      { id: "M2", namaMapel: "Administrasi Jaringan Komputer", sheetName: "2026/2027 Jaringan Komputer", kelasTarget: ["VIII-A", "VIII-B", "XI-TJKT-2"] }
+      { id: "M1", namaMapel: "Dasar-Dasar TJKT", sheetName: "2026/2027 Dasar TJKT" },
+      { id: "M2", namaMapel: "Administrasi Jaringan Komputer", sheetName: "2026/2027 Jaringan Komputer" }
     ]
   },
   {
     id: "G2",
     nama: "Sri Wahyuni, S.Pd",
     mapel: [
-      { id: "M3", namaMapel: "Pemasaran & Bisnis Digital", sheetName: "2026/2027 BISNIS DIGITAL", kelasTarget: ["VII-A", "VIII-A", "IX-A"] },
-      { id: "M4", namaMapel: "Ekonomi Bisnis", sheetName: "2026/2027 EKONOMI BISNIS", kelasTarget: ["VIII-A", "VIII-B"] }
+      { id: "M3", namaMapel: "Pemasaran & Bisnis Digital", sheetName: "2026/2027 BISNIS DIGITAL" },
+      { id: "M4", namaMapel: "Ekonomi Bisnis", sheetName: "2026/2027 EKONOMI BISNIS" }
     ]
   },
   {
     id: "G3",
     nama: "Ahmad Fauzi, M.Pd",
     mapel: [
-      { id: "M5", namaMapel: "Matematika Kejuruan", sheetName: "2026/2027 MATEMATIKA", kelasTarget: ["VII-A", "VII-B", "VIII-A", "VIII-B", "IX-A"] }
+      { id: "M5", namaMapel: "Matematika Kejuruan", sheetName: "2026/2027 MATEMATIKA" }
     ]
   }
 ];
@@ -37,7 +37,7 @@ const DATA_GURU_MAPEL = [
 // State Penilaian Aktif
 let activeGuru = null;
 let activeMapel = null;
-let DB_NILAI_STORE = {}; // Menyimpan skor input: key = `${guruId}_${mapelId}_${tapel}_${kelas}_${jenis}`
+let DB_NILAI_STORE = {}; // key = `${guruId}_${mapelId}_${tapel}_${kelas}_${jenis}`
 
 /**
  * Inisialisasi Modul Rapot
@@ -54,7 +54,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * 1. ALUR RAPOT: LANGKAH 1 (PILIH GURU) - TAMPILAN BERSIH
+ * FUNGSI SINKRONISASI INSTAN DARI APP.JS
+ * Dipanggil otomatis saat fetch data siswa selesai
+ */
+function onDataSiswaUpdated() {
+  populateSelectKelasInput();
+  const viewRapotInput = document.getElementById('view-rapot-input');
+  if (viewRapotInput && !viewRapotInput.classList.contains('hidden')) {
+    renderTabelInputNilai();
+  }
+}
+
+/**
+ * 1. ALUR RAPOT: LANGKAH 1 (PILIH GURU)
  */
 function renderGuruCards() {
   const container = document.getElementById('grid-guru-cards');
@@ -147,15 +159,25 @@ function populateSelectKelasInput() {
   const select = document.getElementById('select-rapot-kelas');
   if (!select) return;
 
-  const kelasSiswa = [...new Set(DATA_SISWA.map(s => s.kelas).filter(k => k))].sort();
-  const optionsKelas = kelasSiswa.length > 0 ? kelasSiswa : ["VII-A", "VII-B", "VIII-A", "VIII-B", "IX-A"];
+  const currentVal = select.value;
+  // Ekstrak semua nama kelas unik langsung dari data siswa master
+  const kelasSiswa = [...new Set(DATA_SISWA.map(s => s.kelas).filter(k => k && k.trim() !== ""))].sort();
+
+  if (kelasSiswa.length === 0) {
+    select.innerHTML = '<option value="">Memuat data kelas...</option>';
+    return;
+  }
 
   select.innerHTML = '';
-  optionsKelas.forEach((kls, idx) => {
+  kelasSiswa.forEach((kls, idx) => {
     const opt = document.createElement('option');
     opt.value = kls;
     opt.innerText = `Kelas ${kls}`;
-    if (idx === 0) opt.selected = true;
+    if (currentVal && currentVal === kls) {
+      opt.selected = true;
+    } else if (!currentVal && idx === 0) {
+      opt.selected = true;
+    }
     select.appendChild(opt);
   });
 }
@@ -176,13 +198,64 @@ function getNilaiStoreKey() {
 }
 
 /**
- * Sanitasi Input Nilai: Hanya Angka & Maksimal 2 Digit (Tanpa Titik / Koma)
+ * SANITASI & VALIDASI KETAT INPUT NILAI:
+ * 1. Menolak simbol seperti koma, titik, minus, spasi.
+ * 2. Mengubah warna menjadi merah jika hanya 1 digit.
  */
-function sanitizeScoreInput(el) {
+function handleScoreInput(el) {
+  // Hanya menerima angka 0-9
   el.value = el.value.replace(/[^0-9]/g, '');
+
+  // Batasi maksimal 2 digit
   if (el.value.length > 2) {
     el.value = el.value.slice(0, 2);
   }
+
+  // Cek validasi visual secara real-time
+  if (el.value.length === 1) {
+    el.classList.add('border-red-500', 'bg-red-50', 'text-red-600');
+    el.classList.remove('border-slate-200', 'bg-white', 'text-slate-900');
+  } else {
+    el.classList.remove('border-red-500', 'bg-red-50', 'text-red-600');
+    el.classList.add('border-slate-200', 'bg-white', 'text-slate-900');
+  }
+}
+
+/**
+ * BLUR HANDLER: LOCK FOCUS JIKA HANYA 1 DIGIT (TIDAK BISA PINDAH KOLOM)
+ */
+function handleScoreBlur(el) {
+  if (el.value.length === 1) {
+    el.classList.add('border-red-500', 'bg-red-50', 'text-red-600');
+    
+    // Tampilkan notifikasi toast kecil
+    showInputWarningToast("Wajib 2 digit angka! (Contoh: 85, 70, 08)");
+    
+    // Kunci fokus agar tidak bisa berpindah kolom
+    setTimeout(() => {
+      el.focus();
+      el.select();
+    }, 10);
+  }
+}
+
+function showInputWarningToast(msg) {
+  let toast = document.getElementById('toast-input-warning');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast-input-warning';
+    toast.className = 'fixed top-5 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs md:text-sm font-bold px-4 py-2.5 rounded-full shadow-2xl z-50 transition-all duration-300 pointer-events-none opacity-0 flex items-center gap-1.5';
+    document.body.appendChild(toast);
+  }
+
+  toast.innerHTML = `<i class="ph-bold ph-warning-circle text-base"></i> ${msg}`;
+  toast.classList.remove('opacity-0', '-translate-y-4');
+  toast.classList.add('opacity-100', 'translate-y-0');
+
+  setTimeout(() => {
+    toast.classList.remove('opacity-100', 'translate-y-0');
+    toast.classList.add('opacity-0', '-translate-y-4');
+  }, 2200);
 }
 
 function renderTabelInputNilai() {
@@ -194,9 +267,21 @@ function renderTabelInputNilai() {
 
   tbody.innerHTML = '';
 
+  // Filter siswa berdasarkan kelas yang dipilih
   const siswaList = DATA_SISWA.filter(s => s.kelas === kelasTerpilih);
 
   if (siswaList.length === 0) {
+    if (DATA_SISWA.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="3" class="py-8 text-center text-slate-500 font-semibold">
+            <i class="ph-bold ph-spinner animate-spin text-2xl mb-1 inline-block text-brand-green"></i>
+            <p class="text-xs md:text-sm">Memuat daftar siswa...</p>
+          </td>
+        </tr>
+      `;
+      return;
+    }
     emptyState.classList.remove('hidden');
     return;
   }
@@ -212,7 +297,7 @@ function renderTabelInputNilai() {
       <td class="py-3 px-2 text-center font-bold text-slate-500">${index + 1}</td>
       <td class="py-3 px-3">
         <span class="font-bold text-slate-900 text-sm md:text-base block">${siswa.nama}</span>
-        <span class="text-xs font-mono text-slate-500">NISN: ${siswa.nisn}</span>
+        <span class="text-xs font-mono text-slate-500">NISN: ${siswa.nisn || '-'}</span>
       </td>
       <td class="py-3 px-2 text-center">
         <input type="text" 
@@ -221,7 +306,8 @@ function renderTabelInputNilai() {
           id="input-score-${siswa.nisn}" 
           value="${nilaiAwal}" 
           placeholder="--"
-          oninput="sanitizeScoreInput(this)"
+          oninput="handleScoreInput(this)"
+          onblur="handleScoreBlur(this)"
           class="w-20 text-center font-bold text-base py-2 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-brand-green focus:bg-emerald-50 transition-all bg-white"
         />
       </td>
@@ -235,37 +321,45 @@ function simpanNilaiKeState() {
   const siswaList = DATA_SISWA.filter(s => s.kelas === kelasTerpilih);
   const storeKey = getNilaiStoreKey();
 
-  if (!DB_NILAI_STORE[storeKey]) {
-    DB_NILAI_STORE[storeKey] = {};
-  }
-
+  // Cek apakah masih ada inputan 1 digit
   let adaNilaiInvalid = false;
+  let invalidInputEl = null;
 
   siswaList.forEach(siswa => {
     const inputEl = document.getElementById(`input-score-${siswa.nisn}`);
     if (inputEl) {
       const val = inputEl.value.trim();
-      if (val !== '' && val.length !== 2) {
+      if (val.length === 1) {
         adaNilaiInvalid = true;
+        if (!invalidInputEl) invalidInputEl = inputEl;
       }
+    }
+  });
+
+  if (adaNilaiInvalid && invalidInputEl) {
+    showInputWarningToast("Terdapat nilai 1 digit. Harap perbaiki menjadi 2 digit!");
+    invalidInputEl.focus();
+    return;
+  }
+
+  if (!DB_NILAI_STORE[storeKey]) {
+    DB_NILAI_STORE[storeKey] = {};
+  }
+
+  siswaList.forEach(siswa => {
+    const inputEl = document.getElementById(`input-score-${siswa.nisn}`);
+    if (inputEl) {
+      const val = inputEl.value.trim();
       DB_NILAI_STORE[storeKey][siswa.nisn] = val !== '' ? Number(val) : '';
     }
   });
 
   localStorage.setItem(STORAGE_KEY_NILAI, JSON.stringify(DB_NILAI_STORE));
-
-  if (adaNilaiInvalid) {
-    alert(`Nilai tersimpan! Catatan: Pastikan nilai yang diinput selalu berupa 2 digit.`);
-  } else {
-    alert(`Berhasil menyimpan nilai untuk kelas ${kelasTerpilih}!`);
-  }
+  alert(`Berhasil menyimpan nilai untuk kelas ${kelasTerpilih}!`);
 }
 
 /**
  * 4. DOWNLOAD EXCEL REKAP NILAI
- * - Baris 1-4: Kolom A & B di-merge, isian di Kolom C
- * - Kolom Nilai Praktek (+5 dari Nilai Utama)
- * - Auto column width & format nama file terstruktur
  */
 function downloadExcelRapotInput() {
   const tapel = document.getElementById('input-tapel').value;
@@ -281,17 +375,16 @@ function downloadExcelRapotInput() {
     return;
   }
 
-  // 1. Susun baris judul atas (Kolom A: Label, Kolom B: kosong untuk merge, Kolom C: Isian Nilai)
+  // Susun baris judul atas (Kolom A & B dimerge, isian di Kolom C)
   const sheetData = [
     ["MATA PELAJARAN", "", `: ${activeMapel.namaMapel}`],
     ["GURU PENGAMPU", "", `: ${activeGuru.nama}`],
     ["TAHUN PELAJARAN", "", `: ${tapel}`],
     ["JENIS PENILAIAN", "", `: ${jenis} (Kelas ${kelas})`],
-    [], // Baris kosong pemisah
+    [],
     ["NO", "NIS / NIPD", "NISN", "NAMA LENGKAP SISWA", "KELAS", "NILAI", "NILAI PRAKTEK", "STATUS KKM (75)"]
   ];
 
-  // 2. Masukkan data tabel siswa
   siswaList.forEach((s, idx) => {
     const rawScore = savedScores[s.nisn];
     const hasScore = rawScore !== undefined && rawScore !== '';
@@ -313,18 +406,17 @@ function downloadExcelRapotInput() {
     ]);
   });
 
-  // 3. Konversi array ke worksheet SheetJS
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-  // 4. Merge Kolom A dan B untuk Baris 1 s/d 4 (Index 0 s/d 3)
+  // Merge Kolom A & B pada baris 1 s/d 4
   ws['!merges'] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }, // Baris 1 (A1:B1)
-    { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, // Baris 2 (A2:B2)
-    { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } }, // Baris 3 (A3:B3)
-    { s: { r: 3, c: 0 }, e: { r: 3, c: 1 } }  // Baris 4 (A4:B4)
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } },
+    { s: { r: 3, c: 0 }, e: { r: 3, c: 1 } }
   ];
 
-  // 5. Atur lebar kolom (Auto-Width agar Nama dan Data Utuh)
+  // Atur lebar kolom
   ws['!cols'] = [
     { wch: 6 },  // NO
     { wch: 16 }, // NIS / NIPD
@@ -340,7 +432,6 @@ function downloadExcelRapotInput() {
   const safeSheetName = `${kelas}_${jenis}`.substring(0, 31);
   XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
 
-  // Format Nama File: Tahun Pelajaran - Kelas - Jenis Nilai - Nama Mapel.xlsx
   const safeTapel = tapel.replace(/[\/\\]/g, '-');
   const safeKelas = kelas.replace(/[\/\\]/g, '-');
   const safeJenis = jenis.replace(/[\/\\]/g, '-');
