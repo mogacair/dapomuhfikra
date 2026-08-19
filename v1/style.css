@@ -36,12 +36,33 @@ body {
 /* ======================================================= */
 @page {
   size: A4 portrait;
-  margin: 15mm 15mm 15mm 15mm;
+  margin: 12mm 15mm;
 }
 
 .page-break {
   page-break-after: always;
   break-after: page;
+}
+
+/* Watermark Rapor Siswa Transparansi 25% */
+.watermark-container {
+  position: relative;
+  background-color: white;
+}
+
+.watermark-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  height: 320px;
+  opacity: 0.25; /* Transparansi 25% */
+  pointer-events: none;
+  z-index: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
 }
 
 @media print {
@@ -52,6 +73,7 @@ body {
     color: black !important;
   }
 
+  /* Sembunyikan frame aplikasi saat mode print aktif */
   #app-frame {
     display: none !important;
   }
@@ -60,13 +82,11 @@ body {
     display: none !important;
   }
 
-  /* Tampilkan area cetak rapor lengkap */
   #print-section-rapor-lengkap {
     display: block !important;
     width: 100% !important;
   }
 
-  /* Jika mencetak Data Siswa biasa */
   #print-section-siswa {
     display: block !important;
   }
