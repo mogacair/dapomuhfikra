@@ -9,31 +9,26 @@ body {
 /* ======================================================= */
 /* SCROLLBAR BIASA: TEBAL, KONTRAS, & JELAS TERLIHAT       */
 /* ======================================================= */
-/* Lebar scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-/* Track / Jalur Scrollbar (Abu-abu Terang Bersih) */
 ::-webkit-scrollbar-track {
   background: #e2e8f0;
   border-radius: 6px;
 }
 
-/* Thumb / Batang Scrollbar (Abu-abu Gelap Kontras) */
 ::-webkit-scrollbar-thumb {
   background: #334155;
   border-radius: 6px;
   border: 1.5px solid #e2e8f0;
 }
 
-/* Efek saat thumb di-hover (Lebih Gelap) */
 ::-webkit-scrollbar-thumb:hover {
   background: #0f172a;
 }
 
-/* Dukungan Standar Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: #334155 #e2e8f0;
@@ -68,22 +63,15 @@ body {
     display: none !important;
   }
 
-  #view-siswa {
-    display: block !important;
-    padding: 0 !important;
-  }
-
   #view-dashboard,
   #modal-detail,
+  #modal-detail-rapot,
   #toast-exit {
     display: none !important;
   }
 
-  #table-screen-wrapper {
+  #table-screen-wrapper,
+  #table-rapot-wrapper {
     display: none !important;
-  }
-
-  #print-section {
-    display: block !important;
   }
 }
