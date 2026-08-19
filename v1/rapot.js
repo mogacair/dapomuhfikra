@@ -522,7 +522,7 @@ function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
 }
 
 /**
- * 3. CETAK RAPOR PDF WALI KELAS (ASYNC PRELOAD WATERMARK AGAR 100% MUNCUL)
+ * 3. CETAK RAPOR PDF WALI KELAS (REVISI: HANYA SATU KOLOM 'NILAI')
  */
 async function cetakPDFRaporSiswa() {
   const container = document.getElementById('print-section-rapor-lengkap');
@@ -564,23 +564,23 @@ async function cetakPDFRaporSiswa() {
     allMapelList.forEach((m, mIdx) => {
       const nilaiTeori = getNilaiTeoriSiswa(m.guruId, m.mapelId, siswa.kelas, siswa.nisn);
       const nilaiPraktek = nilaiTeori + 5;
+      
+      // FORMULA NILAI: (75% Nilai Praktek + 25% Nilai Teori)
       const nilaiAkhir = Math.round((0.75 * nilaiPraktek) + (0.25 * nilaiTeori));
 
       rowsHtml += `
         <tr>
-          <td style="border: 1px solid black; padding: 5px; text-align: center;">${mIdx + 1}</td>
-          <td style="border: 1px solid black; padding: 5px; font-weight: 600;">${m.namaMapel}</td>
-          <td style="border: 1px solid black; padding: 5px; text-align: center;">${nilaiTeori}</td>
-          <td style="border: 1px solid black; padding: 5px; text-align: center;">${nilaiPraktek}</td>
-          <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">${nilaiAkhir}</td>
-          <td style="border: 1px solid black; padding: 5px; text-align: center;">-</td>
+          <td style="border: 1px solid black; padding: 6px 4px; text-align: center;">${mIdx + 1}</td>
+          <td style="border: 1px solid black; padding: 6px 8px; font-weight: 600;">${m.namaMapel}</td>
+          <td style="border: 1px solid black; padding: 6px 4px; text-align: center; font-weight: bold; font-size: 10.5pt;">${nilaiAkhir}</td>
+          <td style="border: 1px solid black; padding: 6px 4px; text-align: center;">-</td>
         </tr>
       `;
     });
 
     pageWrapper.innerHTML = `
       <!-- ============================================================ -->
-      <!-- WATERMARK LOGO SEKOLAH (INLINE STYLE TENGAH, LAYER PALING ATAS, 15% OPACITY) -->
+      <!-- WATERMARK LOGO SEKOLAH (INLINE STYLE TENGAH, LAYER ATAS, 15%) -->
       <!-- ============================================================ -->
       <img src="${WATERMARK_LOGO_FILE}" 
            alt="Watermark" 
@@ -624,16 +624,14 @@ async function cetakPDFRaporSiswa() {
           </table>
         </div>
 
-        <!-- TABEL 1: DAFTAR NILAI MAPEL -->
+        <!-- TABEL 1: DAFTAR NILAI MAPEL (REVISI: HEADER HANYA 'NILAI') -->
         <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 14px;">
           <thead>
             <tr style="background-color: #f3f4f6;">
-              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 30px;">No</th>
+              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 35px;">No</th>
               <th style="border: 1px solid black; padding: 6px 8px; text-align: left;">Mata Pelajaran</th>
-              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 75px;">Nilai Teori</th>
-              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 80px;">Nilai Praktek</th>
-              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 75px;">Nilai Akhir</th>
-              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 120px;">Capaian Kompetensi</th>
+              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 85px;">Nilai</th>
+              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 140px;">Capaian Kompetensi</th>
             </tr>
           </thead>
           <tbody>
@@ -718,7 +716,6 @@ async function cetakPDFRaporSiswa() {
 
   container.classList.remove('hidden');
 
-  // PRELOAD & DECODE GAMBAR WATERMARK AGAR BROWSER MEMUAT SEBELUM CETAK
   try {
     const images = Array.from(container.querySelectorAll('img.watermark-img'));
     await Promise.all(images.map(img => {
@@ -732,7 +729,6 @@ async function cetakPDFRaporSiswa() {
     console.warn("Preload watermark warning:", e);
   }
 
-  // Beri jeda 100ms agar rendering buffer selesai
   setTimeout(() => {
     window.print();
   }, 100);
