@@ -1,92 +1,106 @@
 /**
  * ============================================================
- * DAPODIK MUHFIKRA - APLIKASI WEB AKADEMIK
+ * DAPODIK MUHFIKRA - BACKEND INTEGRATION & LOGIC
  * File: app.js
  * ============================================================
  */
 
-/**
- * 1. VARIABEL GLOBAL & STATE KONTROL EXIT
- */
+// URL Web App Google Apps Script
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxXWxCZ1TnX6oxk-Vx5d7ouIZ3tbxJojHclmEVzHLp_A9_YixKPqqj9TL3OyGj89oysfw/exec";
+
+// Penampung data master siswa dari Google Sheets
+let DATA_SISWA = [];
+
+// Variabel kontrol exit double-back di dashboard
 let exitAppPending = false;
 let exitTimeout = null;
 
 /**
- * 2. DATA SISWA DUMMY (TAHAP 1)
- * Format objek JSON ini siap digantikan dari response Google Apps Script (GAS)
- */
-const DATA_SISWA_DUMMY = [
-  {
-    nis: '21220701',
-    nisn: '0081234561',
-    nama: 'Ahmad Faiz Al-Ghifari',
-    kelas: 'VII-A',
-    ttl: 'Surabaya, 12 Mei 2011',
-    ibu: 'Siti Aminah',
-    alamat: 'Jl. Melati No. 14, RT 02/RW 03, Sukolilo'
-  },
-  {
-    nis: '21220702',
-    nisn: '0081234562',
-    nama: 'Aisyah Putri Azzahra',
-    kelas: 'VII-A',
-    ttl: 'Malang, 23 Agustus 2011',
-    ibu: 'Nurul Hidayati',
-    alamat: 'Perumahan Griya Indah Blok C-5'
-  },
-  {
-    nis: '21220703',
-    nisn: '0081234563',
-    nama: 'Bagas Pratama Wicaksono',
-    kelas: 'VII-B',
-    ttl: 'Sidoarjo, 04 Januari 2011',
-    ibu: 'Endang Sulastri',
-    alamat: 'Desa Karangploso RT 01/RW 01'
-  },
-  {
-    nis: '20210801',
-    nisn: '0071234564',
-    nama: 'Fatimah Zahra Rahmawati',
-    kelas: 'VIII-A',
-    ttl: 'Gresik, 19 Oktober 2010',
-    ibu: 'Rina Wahyuni',
-    alamat: 'Jl. KH. Agus Salim No. 88'
-  },
-  {
-    nis: '20210802',
-    nisn: '0071234565',
-    nama: 'Muhammad Rizky Ramadhan',
-    kelas: 'VIII-B',
-    ttl: 'Surabaya, 01 September 2010',
-    ibu: 'Dewi Kartika',
-    alamat: 'Dukuh Kupang Timur Gg. 6 No. 2'
-  },
-  {
-    nis: '19200901',
-    nisn: '0061234566',
-    nama: 'Zaskia Nur Azizah',
-    kelas: 'IX-A',
-    ttl: 'Mojokerto, 15 Juli 2009',
-    ibu: 'Tri Wahyuningrum',
-    alamat: 'Jl. Pahlawan Kusuma Bangsa No. 45'
-  }
-];
-
-/**
- * 3. INISIALISASI HALAMAN PERTAMA KALI
+ * 1. INISIALISASI APLIKASI
  */
 document.addEventListener('DOMContentLoaded', () => {
-  // Set riwayat awal browser ke level 1 (Dashboard)
+  // Pasang Level 1 (Dashboard) pada riwayat browser
   history.replaceState({ page: 'dashboard' }, 'Dashboard', '');
   
-  // Render data tabel layar & tabel print
-  renderTableScreen(DATA_SISWA_DUMMY);
-  renderTablePrint(DATA_SISWA_DUMMY);
+  // Ambil data live dari Google Sheet saat aplikasi dibuka
+  fetchDataFromGAS();
 });
 
 /**
- * 4. FUNGSI NAVIGASI PINDAH HALAMAN (LEVEL 2)
- * @param {string} pageName - Nama section/halaman tujuan
+ * 2. AMBIL DATA DARI GOOGLE APPS SCRIPT (GAS)
+ */
+async function fetchDataFromGAS() {
+  const tbodyScreen = document.getElementById('tbody-siswa');
+  const emptyState = document.getElementById('empty-state');
+
+  // Tampilan Loading di Tabel
+  tbodyScreen.innerHTML = `
+    <tr>
+      <td colspan="4" class="py-10 text-center text-slate-500 font-semibold">
+        <i class="ph-bold ph-spinner animate-spin text-3xl mb-2 text-brand-green inline-block"></i>
+        <p class="text-sm md:text-base font-medium">Sedang memuat data dari Google Sheets...</p>
+      </td>
+    </tr>
+  `;
+
+  try {
+    const response = await fetch(GAS_WEB_APP_URL);
+    const result = await response.json();
+
+    if (result.status === "success") {
+      DATA_SISWA = result.data;
+
+      // Buat pilihan dropdown kelas otomatis sesuai data yang ada di sheet
+      populateClassFilter(DATA_SISWA);
+
+      // Render data ke tabel layar dan tabel cetak
+      renderTableScreen(DATA_SISWA);
+      renderTablePrint(DATA_SISWA);
+    } else {
+      console.error("Error dari GAS:", result.message);
+      tbodyScreen.innerHTML = `
+        <tr>
+          <td colspan="4" class="py-8 text-center text-red-600 font-bold text-sm">
+            <i class="ph-bold ph-warning text-3xl mb-1 inline-block"></i>
+            <p>Gagal memuat: ${result.message}</p>
+          </td>
+        </tr>
+      `;
+    }
+  } catch (error) {
+    console.error("Gagal terhubung ke Google Apps Script:", error);
+    tbodyScreen.innerHTML = `
+      <tr>
+        <td colspan="4" class="py-8 text-center text-red-600 font-bold text-sm">
+          <i class="ph-bold ph-wifi-slash text-3xl mb-1 inline-block"></i>
+          <p>Terjadi kendala koneksi atau deployment URL belum diset ke 'Anyone'.</p>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+/**
+ * 3. OTOMATISASI DAFTAR DROPDOWN KELAS SESUAI SHEET
+ */
+function populateClassFilter(dataList) {
+  const select = document.getElementById('filter-kelas');
+  if (!select) return;
+
+  // Ekstrak nama kelas unik dan urutkan
+  const kelasList = [...new Set(dataList.map(item => item.kelas).filter(k => k && k.trim() !== ""))].sort();
+
+  select.innerHTML = '<option value="ALL">Semua Siswa</option>';
+  kelasList.forEach(kls => {
+    const opt = document.createElement('option');
+    opt.value = kls;
+    opt.innerText = `Kelas ${kls}`;
+    select.appendChild(opt);
+  });
+}
+
+/**
+ * 4. NAVIGASI PINDAH HALAMAN (LEVEL 2)
  */
 function goToPage(pageName) {
   history.pushState({ page: pageName }, pageName, '');
@@ -94,31 +108,28 @@ function goToPage(pageName) {
 }
 
 /**
- * 5. BUKA MODAL DETAIL BIODATA SISWA (LEVEL 3)
- * @param {string} nisn - Nomor Induk Siswa Nasional yang dipilih
+ * 5. BUKA DETAIL SISWA (LEVEL 3)
  */
 function openModalDetail(nisn) {
-  const siswa = DATA_SISWA_DUMMY.find(s => s.nisn === nisn);
+  const siswa = DATA_SISWA.find(s => s.nisn === nisn);
   if (!siswa) return;
 
-  // Masukkan data siswa ke elemen modal
-  document.getElementById('det-nama').innerText = siswa.nama;
-  document.getElementById('det-nis').innerText = siswa.nis;
-  document.getElementById('det-nisn').innerText = siswa.nisn;
-  document.getElementById('det-kelas').innerText = siswa.kelas;
-  document.getElementById('det-ttl').innerText = siswa.ttl;
-  document.getElementById('det-ibu').innerText = siswa.ibu;
-  document.getElementById('det-alamat').innerText = siswa.alamat;
+  // Masukkan data siswa ke komponen modal detail
+  document.getElementById('det-nama').innerText = siswa.nama || '-';
+  document.getElementById('det-nis').innerText = siswa.nis || '-';
+  document.getElementById('det-nisn').innerText = siswa.nisn || '-';
+  document.getElementById('det-kelas').innerText = siswa.kelas || '-';
+  document.getElementById('det-ttl').innerText = siswa.ttl || '-';
+  document.getElementById('det-ibu').innerText = siswa.ibu || '-';
+  document.getElementById('det-alamat').innerText = siswa.alamat || '-';
 
-  // Daftarkan riwayat Level 3 di browser
+  // Catat state level 3 di browser
   history.pushState({ page: 'siswa_detail', nisn: nisn }, 'Detail Siswa', '');
   applyViewState({ page: 'siswa_detail', nisn: nisn });
 }
 
 /**
- * 6. ENGINE UTAMA PENGATUR STATE TAMPILAN VIEW
- * Menjaga sinkronisasi visual terhadap riwayat history browser
- * @param {object} state - Objek history state saat ini
+ * 6. SINKRONISASI TAMPILAN VIEW TERHADAP STATE RIWAYAT BROWSER
  */
 function applyViewState(state) {
   const viewDashboard = document.getElementById('view-dashboard');
@@ -132,7 +143,7 @@ function applyViewState(state) {
 
   const page = state ? state.page : 'dashboard';
 
-  // KONDISI LEVEL 3: Modal Detail Siswa Terbuka
+  // LEVEL 3: Modal Detail Terbuka
   if (page === 'siswa_detail') {
     viewDashboard.classList.add('hidden');
     viewSiswa.classList.remove('hidden');
@@ -141,7 +152,6 @@ function applyViewState(state) {
     headerTitle.innerText = "Detail Siswa";
     headerSubtitle.innerText = "Dapodik Muhfikra";
 
-    // Efek Slide-Up Modal
     modal.classList.remove('opacity-0', 'pointer-events-none');
     modal.classList.add('opacity-100');
     modalContent.classList.remove('translate-y-full', 'md:scale-95');
@@ -149,13 +159,13 @@ function applyViewState(state) {
     return;
   }
 
-  // Tutup Modal jika kembali ke level di bawahnya
+  // Tutup Modal saat kembali ke level 2 atau level 1
   modalContent.classList.remove('translate-y-0', 'md:scale-100');
   modalContent.classList.add('translate-y-full', 'md:scale-95');
   modal.classList.remove('opacity-100');
   modal.classList.add('opacity-0', 'pointer-events-none');
 
-  // KONDISI LEVEL 2: Section Data Siswa
+  // LEVEL 2: Halaman Data Siswa
   if (page === 'siswa') {
     viewDashboard.classList.add('hidden');
     viewSiswa.classList.remove('hidden');
@@ -166,7 +176,7 @@ function applyViewState(state) {
     return;
   }
 
-  // KONDISI LEVEL 1: Dashboard Utama
+  // LEVEL 1: Dashboard Utama
   if (page === 'dashboard') {
     viewSiswa.classList.add('hidden');
     viewDashboard.classList.remove('hidden');
@@ -178,21 +188,20 @@ function applyViewState(state) {
 }
 
 /**
- * 7. PENANGANAN GESTURE/TOMBOL BACK PADA BROWSER / HP (POPSTATE)
+ * 7. PENANGANAN GESTURE / TOMBOL BACK (POPSTATE)
  */
 window.addEventListener('popstate', (event) => {
   const state = event.state;
 
-  // Jika kembali ke Dashboard Utama (Level 1)
+  // Jika kembali ke Level 1 (Dashboard Utama)
   if (!state || state.page === 'dashboard') {
     applyViewState({ page: 'dashboard' });
 
-    // Proteksi double-back sebelum menutup tab browser
     if (!exitAppPending) {
       exitAppPending = true;
       showExitToast();
       
-      // Dorong kembali state agar tetap di dashboard
+      // Dorong kembali state agar tetap di dashboard jika belum double-back
       history.pushState({ page: 'dashboard' }, 'Dashboard', '');
 
       clearTimeout(exitTimeout);
@@ -203,13 +212,12 @@ window.addEventListener('popstate', (event) => {
       history.back();
     }
   } else {
-    // Jalankan navigasi stack Level 2 / Level 3
     applyViewState(state);
   }
 });
 
 /**
- * 8. MENAMPILKAN TOAST PESAN KONFIRMASI KELUAR
+ * 8. NOTIFIKASI TOAST KONFIRMASI KELUAR
  */
 function showExitToast() {
   const toast = document.getElementById('toast-exit');
@@ -223,8 +231,7 @@ function showExitToast() {
 }
 
 /**
- * 9. RENDER DATA KE TABEL TAMPILAN LAYAR (RINGKAS)
- * @param {Array} dataList - List data siswa
+ * 9. RENDER TABEL LAYAR HP / MONITOR
  */
 function renderTableScreen(dataList) {
   const tbody = document.getElementById('tbody-siswa');
@@ -244,7 +251,7 @@ function renderTableScreen(dataList) {
     
     tr.innerHTML = `
       <td class="py-3.5 px-3 text-center font-bold text-slate-500">${index + 1}</td>
-      <td class="py-3.5 px-3 font-mono text-xs md:text-sm text-slate-600">${siswa.nisn}</td>
+      <td class="py-3.5 px-3 font-mono text-xs md:text-sm text-slate-600">${siswa.nisn || '-'}</td>
       <td class="py-3.5 px-3">
         <button onclick="openModalDetail('${siswa.nisn}')" class="text-left font-bold text-brand-green hover:underline focus:outline-none text-base md:text-lg block">
           ${siswa.nama}
@@ -252,7 +259,7 @@ function renderTableScreen(dataList) {
       </td>
       <td class="py-3.5 px-3 text-center">
         <span class="inline-block bg-slate-200 text-slate-800 text-xs md:text-sm font-bold px-2.5 py-1 rounded-lg">
-          ${siswa.kelas}
+          ${siswa.kelas || '-'}
         </span>
       </td>
     `;
@@ -261,8 +268,7 @@ function renderTableScreen(dataList) {
 }
 
 /**
- * 10. RENDER DATA KE TABEL CETAK PDF LANDSCAPE (LENGKAP)
- * @param {Array} dataList - List data siswa
+ * 10. RENDER TABEL CETAK PDF LANDSCAPE LENGKAP
  */
 function renderTablePrint(dataList) {
   const tbodyPrint = document.getElementById('tbody-print-siswa');
@@ -274,29 +280,29 @@ function renderTablePrint(dataList) {
 
     tr.innerHTML = `
       <td class="border border-black p-1.5 text-center font-bold">${index + 1}</td>
-      <td class="border border-black p-1.5 text-center font-mono">${siswa.nis}</td>
-      <td class="border border-black p-1.5 text-center font-mono">${siswa.nisn}</td>
-      <td class="border border-black p-1.5 font-bold">${siswa.nama}</td>
-      <td class="border border-black p-1.5 text-center font-semibold">${siswa.kelas}</td>
-      <td class="border border-black p-1.5">${siswa.ttl}</td>
-      <td class="border border-black p-1.5">${siswa.ibu}</td>
-      <td class="border border-black p-1.5 leading-snug">${siswa.alamat}</td>
+      <td class="border border-black p-1.5 text-center font-mono">${siswa.nis || '-'}</td>
+      <td class="border border-black p-1.5 text-center font-mono">${siswa.nisn || '-'}</td>
+      <td class="border border-black p-1.5 font-bold">${siswa.nama || '-'}</td>
+      <td class="border border-black p-1.5 text-center font-semibold">${siswa.kelas || '-'}</td>
+      <td class="border border-black p-1.5">${siswa.ttl || '-'}</td>
+      <td class="border border-black p-1.5">${siswa.ibu || '-'}</td>
+      <td class="border border-black p-1.5 leading-snug">${siswa.alamat || '-'}</td>
     `;
     tbodyPrint.appendChild(tr);
   });
 }
 
 /**
- * 11. FILTER DATA BERDASARKAN KELAS
+ * 11. FILTER BERDASARKAN KELAS
  */
 function filterDataSiswa() {
   const selectedClass = document.getElementById('filter-kelas').value;
   const btnCetakText = document.getElementById('btn-cetak-text');
   const printFilterInfo = document.getElementById('print-filter-info');
 
-  let filtered = DATA_SISWA_DUMMY;
+  let filtered = DATA_SISWA;
   if (selectedClass !== 'ALL') {
-    filtered = DATA_SISWA_DUMMY.filter(s => s.kelas === selectedClass);
+    filtered = DATA_SISWA.filter(s => s.kelas === selectedClass);
     btnCetakText.innerText = `Cetak PDF Landscape (Kelas ${selectedClass})`;
     printFilterInfo.innerText = `Filter: Kelas ${selectedClass}`;
   } else {
@@ -323,28 +329,8 @@ function cetakPDF() {
 }
 
 /**
- * 13. PLACEHOLDER UNTUK MENU YANG MASIH DALAM PENGEMBANGAN
- * @param {string} menuName - Nama menu yang diklik
+ * 13. PLACEHOLDER UNTUK MENU TAHAP SELANJUTNYA
  */
 function showUnderDevelopment(menuName) {
   alert(`Menu [${menuName}] akan dikembangkan pada tahap selanjutnya.`);
-}
-
-/**
- * 14. INTEGRASI GOOGLE APPS SCRIPT (GAS)
- * Fungsi ini dipersiapkan untuk menarik data live dari Google Sheet via Apps Script Web App URL
- */
-async function loadDataFromGAS() {
-  const GAS_WEB_APP_URL = "URL_GOOGLE_APPS_SCRIPT_ANDA_DISINI";
-  try {
-    /*
-    const response = await fetch(GAS_WEB_APP_URL);
-    const result = await response.json();
-    renderTableScreen(result.data);
-    renderTablePrint(result.data);
-    */
-    console.log("Endpoint GAS siap dihubungkan.");
-  } catch (error) {
-    console.error("Gagal memuat data dari Google Apps Script:", error);
-  }
 }
