@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Phosphor Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <!-- SheetJS Library untuk Download File Excel (.xlsx) -->
+  <!-- SheetJS Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
   <script>
@@ -91,6 +91,7 @@
         </div>
 
         <div class="grid grid-cols-2 gap-4">
+          <!-- Data Siswa -->
           <button onclick="goToPage('siswa')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-green transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-brand-greenLight text-brand-green flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-student"></i>
@@ -101,6 +102,7 @@
             </div>
           </button>
 
+          <!-- Data Guru -->
           <button onclick="showUnderDevelopment('Data Guru')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-yellow transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-brand-yellowLight text-brand-yellow flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-chalkboard-teacher"></i>
@@ -111,6 +113,7 @@
             </div>
           </button>
 
+          <!-- Data Alumni -->
           <button onclick="showUnderDevelopment('Data Alumni')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-slate-400 transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-graduation-cap"></i>
@@ -121,13 +124,14 @@
             </div>
           </button>
 
+          <!-- Rapot -->
           <button onclick="goToPage('rapot_guru')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-red transition-all group">
             <div class="w-16 h-16 rounded-2xl bg-red-50 text-brand-red flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
               <i class="ph-fill ph-book-open"></i>
             </div>
             <div>
               <span class="font-bold text-lg text-slate-800 block">Rapot</span>
-              <span class="text-xs text-brand-grayText">Input & Nilai</span>
+              <span class="text-xs text-brand-grayText">Input & Cetak</span>
             </div>
           </button>
         </div>
@@ -186,7 +190,7 @@
           💡 <em>Klik nama siswa untuk membuka detail biodata lengkap.</em>
         </p>
 
-        <!-- Area Cetak PDF Data Siswa -->
+        <!-- Area Cetak PDF Data Siswa Landscape -->
         <div id="print-section-siswa" class="hidden">
           <div class="text-center border-b-2 border-black pb-3 mb-4">
             <h2 class="text-2xl font-bold tracking-wide uppercase">DATA POKOK PENDIDIKAN (DAPODIK) MUHFIKRA</h2>
@@ -225,19 +229,42 @@
       </section>
 
       <!-- ============================================== -->
-      <!-- SECTION 4A: RAPOT - PILIH GURU (CARDBOARD)     -->
+      <!-- SECTION 4A: RAPOT - PILIH MODE (2 BAGIAN)      -->
       <!-- ============================================== -->
       <section id="view-rapot-guru" class="hidden p-4 md:p-5 flex flex-col gap-4 animate-fade-in pb-12">
-        <div class="bg-red-50 border border-red-200 p-4 rounded-2xl flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-brand-red text-white flex items-center justify-center text-xl shrink-0">
-            <i class="ph-bold ph-chalkboard-teacher"></i>
+        <!-- 2 Kolom: Kiri Guru Pengampu, Kanan Wali Kelas -->
+        <div class="grid grid-cols-2 gap-3">
+          <!-- Kiri: Guru Pengampu (Active) -->
+          <div class="bg-red-50 border-2 border-brand-red p-3.5 rounded-2xl flex flex-col justify-between shadow-sm">
+            <div class="w-10 h-10 rounded-xl bg-brand-red text-white flex items-center justify-center text-xl shrink-0 mb-2">
+              <i class="ph-bold ph-chalkboard-teacher"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm md:text-base leading-tight">Guru Pengampu</h3>
+              <p class="text-[11px] text-slate-500 mt-1 leading-snug">Input & kelola nilai mapel</p>
+            </div>
           </div>
-          <div>
-            <h3 class="font-bold text-slate-800 text-base">Pilih Guru Pengampu</h3>
-            <p class="text-xs text-slate-500">Pilih nama guru untuk mengelola penilaian mapel</p>
+
+          <!-- Kanan: Menu Wali Kelas (Clickable) -->
+          <div onclick="goToPage('rapot_walikelas')" class="bg-white border-2 border-slate-200 hover:border-brand-green p-3.5 rounded-2xl flex flex-col justify-between shadow-sm cursor-pointer active:scale-95 transition-all group">
+            <div class="flex items-center justify-between mb-2">
+              <div class="w-10 h-10 rounded-xl bg-emerald-50 text-brand-green group-hover:bg-brand-green group-hover:text-white transition-colors flex items-center justify-center text-xl shrink-0">
+                <i class="ph-bold ph-users-three"></i>
+              </div>
+              <span class="bg-brand-greenLight text-brand-greenDark text-[10px] font-extrabold px-2 py-0.5 rounded-full">Menu</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm md:text-base leading-tight group-hover:text-brand-green transition-colors">Wali Kelas</h3>
+              <p class="text-[11px] text-slate-500 mt-1 leading-snug">Cetak rapor siswa per kelas</p>
+            </div>
           </div>
         </div>
 
+        <div class="flex items-center justify-between px-1">
+          <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Daftar Guru Pengampu</span>
+        </div>
+
+        <!-- Daftar Cardboard Guru -->
         <div id="grid-guru-cards" class="grid grid-cols-1 gap-3.5"></div>
       </section>
 
@@ -266,7 +293,6 @@
       <!-- SECTION 4C: RAPOT - FORM INPUT NILAI SISWA     -->
       <!-- ============================================== -->
       <section id="view-rapot-input" class="hidden p-4 md:p-5 flex flex-col gap-4 animate-fade-in pb-16">
-        
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3.5 no-print">
           <div class="border-b pb-2 flex items-center justify-between">
             <div>
@@ -284,9 +310,7 @@
             <div class="flex flex-col gap-1">
               <label for="select-rapot-kelas" class="text-xs font-bold text-slate-600 uppercase">Pilih Kelas</label>
               <div class="relative">
-                <select id="select-rapot-kelas" onchange="handleKelasNilaiChange()" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-xs md:text-sm font-bold text-slate-800 focus:outline-none focus:border-brand-green appearance-none cursor-pointer">
-                  <!-- Diisi otomatis dari data sheet -->
-                </select>
+                <select id="select-rapot-kelas" onchange="handleKelasNilaiChange()" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-xs md:text-sm font-bold text-slate-800 focus:outline-none focus:border-brand-green appearance-none cursor-pointer"></select>
                 <i class="ph-bold ph-caret-down absolute right-2.5 top-1/2 -translate-y-1/2 text-base text-slate-500 pointer-events-none"></i>
               </div>
             </div>
@@ -313,7 +337,6 @@
           </div>
         </div>
 
-        <!-- Tabel Input Nilai Siswa -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -321,16 +344,13 @@
                 <tr class="bg-slate-100 border-b border-slate-200 text-slate-700 text-xs md:text-sm font-bold">
                   <th class="py-3 px-2 text-center w-10">No</th>
                   <th class="py-3 px-3">Nama Siswa</th>
-                  <!-- Header Revisi: Nilai 2 Digit & Panduan -->
                   <th class="py-2.5 px-2 text-center w-28">
                     <div class="font-bold text-slate-800 leading-tight">Nilai (2 digit)</div>
                     <div class="text-[10px] font-semibold text-slate-500 mt-0.5">Hanya angka & 2 digit</div>
                   </th>
                 </tr>
               </thead>
-              <tbody id="tbody-input-nilai" class="divide-y divide-slate-100 text-slate-800 text-sm md:text-base">
-                <!-- Diisi via renderTabelInputNilai() -->
-              </tbody>
+              <tbody id="tbody-input-nilai" class="divide-y divide-slate-100 text-slate-800 text-sm md:text-base"></tbody>
             </table>
           </div>
           
@@ -346,7 +366,74 @@
             <span>Simpan Nilai Kelas Ini</span>
           </button>
         </div>
+      </section>
 
+      <!-- ============================================== -->
+      <!-- SECTION 4D: RAPOT - DAFTAR KELAS WALI KELAS    -->
+      <!-- ============================================== -->
+      <section id="view-rapot-walikelas" class="hidden p-4 md:p-5 flex flex-col gap-4 animate-fade-in pb-12">
+        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-brand-green text-white flex items-center justify-center text-xl shrink-0">
+            <i class="ph-bold ph-users-three"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">Menu Wali Kelas</h3>
+            <p class="text-xs text-slate-500">Pilih kelas bimbingan untuk mencetak rapor siswa</p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between px-1">
+          <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Daftar Kelas</span>
+        </div>
+
+        <div id="list-kelas-wali" class="grid grid-cols-1 gap-3.5"></div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- SECTION 4E: RAPOT - CETAK RAPOR KELAS WALI     -->
+      <!-- ============================================== -->
+      <section id="view-rapot-cetak-wali" class="hidden p-4 md:p-5 flex flex-col gap-4 animate-fade-in pb-16">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3.5 no-print">
+          <div class="border-b pb-2 flex items-center justify-between">
+            <div>
+              <span class="bg-brand-green text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase">Wali Kelas</span>
+              <h3 id="label-wali-kelas-nama" class="text-lg font-bold text-slate-900 mt-1">Kelas -</h3>
+            </div>
+            <span id="badge-total-siswa-wali" class="bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-lg">0 Siswa</span>
+          </div>
+
+          <!-- 2 Tombol: Cetak Rapor Excel & PDF -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            <button onclick="downloadExcelRaporWali()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 px-3 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-emerald-200 transition-all">
+              <i class="ph-bold ph-file-xls text-xl"></i>
+              <span>Cetak Rapor Excel</span>
+            </button>
+
+            <button onclick="cetakPDFRaporSiswa()" class="bg-brand-red hover:bg-brand-redDark text-white py-3.5 px-3 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-red-200 transition-all">
+              <i class="ph-bold ph-printer text-xl"></i>
+              <span>Cetak Rapor PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabel Ringkas Siswa di Kelas Terpilih -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden no-print">
+          <div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-600 uppercase">
+            Daftar Siswa Penerima Rapor
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100/60 border-b border-slate-200 text-slate-700 text-xs font-bold">
+                  <th class="py-2.5 px-3 text-center w-10">No</th>
+                  <th class="py-2.5 px-3">Nama Siswa</th>
+                  <th class="py-2.5 px-3 font-mono text-xs">NISN</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-wali-siswa" class="divide-y divide-slate-100 text-slate-800 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -415,6 +502,9 @@
     </div>
 
   </div>
+
+  <!-- CONTAINER PRINT KHUSUS RAPOR SISWA WALI KELAS (MULTI-PAGE A4 PORTRAIT) -->
+  <div id="print-section-rapor-lengkap" class="hidden"></div>
 
   <script src="app.js"></script>
   <script src="rapot.js"></script>
