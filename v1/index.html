@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>DAPODIK MUHFIKRA</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <!-- Konfigurasi Custom Tailwind CSS -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              green: '#16a34a',     // Hijau Utama
+              greenDark: '#15803d',
+              greenLight: '#dcfce7',
+              yellow: '#eab308',    // Kuning Aksen
+              yellowLight: '#fef9c3',
+              red: '#dc2626',       // Merah Aksi / Cetak
+              redDark: '#b91c1c',
+              grayBg: '#f3f4f6',    // Abu-abu Background
+              grayCard: '#f9fafb',
+              grayText: '#4b5563'
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.2s ease-out forwards',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- File CSS Eksternal -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-0 md:p-4">
+
+  <!-- FRAME UTAMA (Responsif Mobile & Tampilan Tablet/HP di Desktop) -->
+  <div id="app-frame" class="w-full max-w-md md:max-w-lg h-screen md:h-[92vh] bg-brand-grayBg md:rounded-3xl shadow-2xl flex flex-col overflow-hidden relative border-0 md:border-4 md:border-slate-800">
+    
+    <!-- HEADER BAR APLIKASI -->
+    <header class="bg-brand-green text-white px-5 py-4 flex items-center justify-between shadow-md z-10 transition-all no-print">
+      <div class="flex items-center gap-3">
+        <!-- Tombol Back Dinamis -->
+        <button id="btn-header-back" onclick="history.back()" class="hidden p-2 -ml-2 rounded-full hover:bg-brand-greenDark active:scale-90 transition-transform">
+          <i class="ph-bold ph-arrow-left text-2xl"></i>
+        </button>
+        <div>
+          <h1 id="header-title" class="text-xl md:text-2xl font-bold tracking-wide">DAPODIK MUHFIKRA</h1>
+          <p id="header-subtitle" class="text-xs text-brand-greenLight font-medium">Sistem Informasi Akademik</p>
+        </div>
+      </div>
+      <div class="w-10 h-10 rounded-full bg-brand-greenDark flex items-center justify-center border-2 border-brand-yellow font-bold text-base shadow-inner">
+        MF
+      </div>
+    </header>
+
+    <!-- AREA KONTEN UTAMA -->
+    <main class="flex-1 overflow-y-auto relative">
+      
+      <!-- ============================================== -->
+      <!-- SECTION 1: DASHBOARD UTAMA                     -->
+      <!-- ============================================== -->
+      <section id="view-dashboard" class="p-5 flex flex-col gap-5 animate-fade-in">
+        <!-- Banner Sambutan Guru -->
+        <div class="bg-gradient-to-r from-brand-green to-emerald-700 text-white rounded-2xl p-5 shadow-sm relative overflow-hidden">
+          <div class="relative z-10">
+            <span class="inline-block bg-brand-yellow text-slate-900 text-xs px-2.5 py-1 rounded-full font-bold uppercase mb-2">Portal Guru</span>
+            <h2 class="text-2xl font-extrabold leading-snug">Selamat Bertugas,<br>Bapak/Ibu Guru</h2>
+            <p class="text-sm text-brand-greenLight mt-1">Pilih menu di bawah untuk mengelola data.</p>
+          </div>
+          <i class="ph-bold ph-chalkboard-teacher absolute -right-4 -bottom-6 text-8xl text-white/10"></i>
+        </div>
+
+        <!-- 4 Tombol Menu Dashboard -->
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Menu 1: Data Siswa -->
+          <button onclick="goToPage('siswa')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-green transition-all group">
+            <div class="w-16 h-16 rounded-2xl bg-brand-greenLight text-brand-green flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+              <i class="ph-fill ph-student"></i>
+            </div>
+            <div>
+              <span class="font-bold text-lg text-slate-800 block">Data Siswa</span>
+              <span class="text-xs text-brand-grayText">Filter & Cetak</span>
+            </div>
+          </button>
+
+          <!-- Menu 2: Data Guru -->
+          <button onclick="showUnderDevelopment('Data Guru')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-yellow transition-all group">
+            <div class="w-16 h-16 rounded-2xl bg-brand-yellowLight text-brand-yellow flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+              <i class="ph-fill ph-chalkboard-teacher"></i>
+            </div>
+            <div>
+              <span class="font-bold text-lg text-slate-800 block">Data Guru</span>
+              <span class="text-xs text-brand-grayText">Direktori Pengajar</span>
+            </div>
+          </button>
+
+          <!-- Menu 3: Data Alumni -->
+          <button onclick="showUnderDevelopment('Data Alumni')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-slate-400 transition-all group">
+            <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+              <i class="ph-fill ph-graduation-cap"></i>
+            </div>
+            <div>
+              <span class="font-bold text-lg text-slate-800 block">Data Alumni</span>
+              <span class="text-xs text-brand-grayText">Arsip Kelulusan</span>
+            </div>
+          </button>
+
+          <!-- Menu 4: Rapot -->
+          <button onclick="showUnderDevelopment('Rapot')" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center justify-center gap-3 text-center active:scale-95 hover:border-brand-red transition-all group">
+            <div class="w-16 h-16 rounded-2xl bg-red-50 text-brand-red flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+              <i class="ph-fill ph-book-open"></i>
+            </div>
+            <div>
+              <span class="font-bold text-lg text-slate-800 block">Rapot</span>
+              <span class="text-xs text-brand-grayText">Nilai Siswa</span>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- SECTION 2: DATA SISWA (TAHAP 1)                -->
+      <!-- ============================================== -->
+      <section id="view-siswa" class="hidden p-4 md:p-5 flex flex-col gap-4 animate-fade-in pb-10">
+        
+        <!-- Filter & Tombol Cetak -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-3 no-print">
+          <div class="flex flex-col gap-1.5">
+            <label for="filter-kelas" class="text-xs font-bold text-slate-600 uppercase tracking-wider">Pilih Kelas</label>
+            <div class="relative">
+              <select id="filter-kelas" onchange="filterDataSiswa()" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-base md:text-lg font-bold text-slate-800 focus:outline-none focus:border-brand-green transition-colors appearance-none">
+                <option value="ALL">Semua Siswa</option>
+                <option value="VII-A">Kelas VII-A</option>
+                <option value="VII-B">Kelas VII-B</option>
+                <option value="VIII-A">Kelas VIII-A</option>
+                <option value="VIII-B">Kelas VIII-B</option>
+                <option value="IX-A">Kelas IX-A</option>
+              </select>
+              <i class="ph-bold ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-xl text-slate-500 pointer-events-none"></i>
+            </div>
+          </div>
+
+          <!-- Tombol Cetak PDF Landscape -->
+          <button onclick="cetakPDF()" class="w-full bg-brand-red hover:bg-brand-redDark text-white py-3.5 px-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-red-200 transition-all">
+            <i class="ph-bold ph-printer text-2xl"></i>
+            <span id="btn-cetak-text">Cetak PDF Landscape (Semua Siswa)</span>
+          </button>
+        </div>
+
+        <!-- Tabel di Layar HP/PC (No, NISN, Nama, Kelas) -->
+        <div id="table-screen-wrapper" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100 border-b border-slate-200 text-slate-700 text-sm md:text-base font-bold">
+                  <th class="py-3.5 px-3 text-center w-12">No</th>
+                  <th class="py-3.5 px-3">NISN</th>
+                  <th class="py-3.5 px-3">Nama Siswa</th>
+                  <th class="py-3.5 px-3 text-center">Kelas</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-siswa" class="divide-y divide-slate-100 text-slate-800 text-sm md:text-base">
+                <!-- Diisi secara dinamis oleh JavaScript -->
+              </tbody>
+            </table>
+          </div>
+          
+          <div id="empty-state" class="hidden p-8 text-center">
+            <i class="ph-duotone ph-magnifying-glass text-5xl text-slate-400 mb-2"></i>
+            <p class="text-base font-bold text-slate-700">Tidak ada data siswa ditemukan</p>
+          </div>
+        </div>
+
+        <p class="text-xs text-center text-slate-500 font-medium no-print">
+          💡 <em>Klik nama siswa untuk membuka detail biodata lengkap.</em>
+        </p>
+
+        <!-- ======================================================== -->
+        <!-- AREA CETAK KHUSUS PDF LANDSCAPE                          -->
+        <!-- ======================================================== -->
+        <div id="print-section" class="hidden">
+          <div class="text-center border-b-2 border-black pb-3 mb-4">
+            <h2 class="text-2xl font-bold tracking-wide uppercase">DATA POKOK PENDIDIKAN (DAPODIK) MUHFIKRA</h2>
+            <p class="text-sm font-semibold text-gray-800 mt-0.5">LAPORAN REKAPITULASI BIODATA LENGKAP SISWA</p>
+            <div class="flex justify-between items-center text-xs font-medium text-gray-700 mt-2 px-2">
+              <span id="print-filter-info">Filter: Semua Siswa</span>
+              <span id="print-date-info">Dicetak pada: -</span>
+            </div>
+          </div>
+
+          <!-- Tabel Cetak PDF Landscape Lengkap -->
+          <table class="w-full border-collapse border border-black text-xs">
+            <thead>
+              <tr class="bg-gray-200 text-black font-bold">
+                <th class="border border-black p-2 text-center w-8">No</th>
+                <th class="border border-black p-2 text-center w-20">NIS / NIPD</th>
+                <th class="border border-black p-2 text-center w-24">NISN</th>
+                <th class="border border-black p-2 text-left w-40">Nama Siswa</th>
+                <th class="border border-black p-2 text-center w-14">Kls</th>
+                <th class="border border-black p-2 text-left w-36">Tempat, Tanggal Lahir</th>
+                <th class="border border-black p-2 text-left w-32">Nama Ibu Kandung</th>
+                <th class="border border-black p-2 text-left">Alamat Domisili</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-print-siswa">
+              <!-- Diisi secara dinamis oleh JavaScript -->
+            </tbody>
+          </table>
+
+          <div class="mt-8 flex justify-end">
+            <div class="text-center text-xs w-56">
+              <p id="print-sign-date">Dicetak, ....................</p>
+              <p class="font-bold mt-1 mb-16">Kepala Sekolah / Wali Kelas</p>
+              <p class="font-bold underline">( _________________________ )</p>
+              <p class="text-[10px] text-gray-600">NIP. ....................................</p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- ============================================== -->
+    <!-- SECTION 3: MODAL DETAIL BIODATA SISWA          -->
+    <!-- ============================================== -->
+    <div id="modal-detail" class="fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-0 md:p-4 opacity-0 pointer-events-none transition-opacity duration-200 no-print">
+      <div id="modal-content" class="w-full max-w-md bg-white rounded-t-3xl md:rounded-3xl p-6 shadow-2xl flex flex-col gap-4 transform translate-y-full md:scale-95 transition-transform duration-300">
+        
+        <!-- Header Modal -->
+        <div class="flex items-center justify-between border-b pb-3">
+          <div class="flex items-center gap-2 text-brand-green">
+            <i class="ph-fill ph-identification-card text-3xl"></i>
+            <h3 class="text-xl font-bold text-slate-900">Detail Biodata Siswa</h3>
+          </div>
+          <button onclick="history.back()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
+            <i class="ph-bold ph-x text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Rincian Identitas Lengkap -->
+        <div class="space-y-3 my-1">
+          <!-- Nama Lengkap -->
+          <div class="bg-brand-greenLight/40 p-3 rounded-xl border border-brand-green/20">
+            <span class="text-xs font-bold text-brand-greenDark uppercase block">Nama Lengkap</span>
+            <p id="det-nama" class="text-lg font-bold text-slate-900">-</p>
+          </div>
+
+          <!-- NIS/NIPD & NISN Grid -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <span class="text-xs font-bold text-slate-500 uppercase block">NIS / NIPD</span>
+              <p id="det-nis" class="text-base font-bold text-slate-800">-</p>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <span class="text-xs font-bold text-slate-500 uppercase block">NISN</span>
+              <p id="det-nisn" class="text-base font-bold text-slate-800">-</p>
+            </div>
+          </div>
+
+          <!-- Kelas & TTL Grid -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 col-span-1">
+              <span class="text-xs font-bold text-slate-500 uppercase block">Kelas</span>
+              <p id="det-kelas" class="text-base font-bold text-slate-800">-</p>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 col-span-2">
+              <span class="text-xs font-bold text-slate-500 uppercase block">Tempat, Tgl Lahir</span>
+              <p id="det-ttl" class="text-sm font-bold text-slate-800 truncate">-</p>
+            </div>
+          </div>
+
+          <!-- Ibu Kandung -->
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span class="text-xs font-bold text-slate-500 uppercase block">Nama Ibu Kandung</span>
+            <p id="det-ibu" class="text-base font-semibold text-slate-800">-</p>
+          </div>
+
+          <!-- Alamat Lengkap -->
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <span class="text-xs font-bold text-slate-500 uppercase block">Alamat Lengkap</span>
+            <p id="det-alamat" class="text-sm font-medium text-slate-700 leading-relaxed">-</p>
+          </div>
+        </div>
+
+        <button onclick="history.back()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 py-3 rounded-xl font-bold text-base active:scale-95 transition-all">
+          Tutup
+        </button>
+      </div>
+    </div>
+
+    <!-- NOTIFIKASI TOAST (DOUBLE BACK HANYA DI DASHBOARD) -->
+    <div id="toast-exit" class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-sm px-4 py-2.5 rounded-full shadow-lg opacity-0 pointer-events-none transition-all duration-300 z-50 whitespace-nowrap border border-slate-700">
+      Tekan sekali lagi untuk keluar dari aplikasi
+    </div>
+
+  </div>
+
+  <!-- File JavaScript Eksternal -->
+  <script src="app.js"></script>
+</body>
+</html>
