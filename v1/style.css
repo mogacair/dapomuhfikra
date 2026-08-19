@@ -52,14 +52,15 @@ body {
 }
 
 /* ============================================================ */
-/* WATERMARK LOGO SEKOLAH (TENGAH, 100%, LAYER ATAS, OPACITY 10%) */
+/* WATERMARK LOGO SEKOLAH (TENGAH, 520px, LAYER ATAS, OPACITY 10%) */
 /* ============================================================ */
 .watermark-bg {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 100%;
+  width: 520px;
+  height: 520px;
   opacity: 0.10;
   pointer-events: none;
   z-index: 99;
