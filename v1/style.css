@@ -59,11 +59,11 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 520px;
-  height: 520px;
-  opacity: 0.10;
-  pointer-events: none;
-  z-index: 99;
+  width: 520px;                 /* Ukuran 520px pas di A4 */
+  height: 520px;                /* Ukuran 520px pas di A4 */
+  opacity: 0.10;                /* Transparansi 10% */
+  pointer-events: none;         /* Agar tidak mengganggu seleksi teks/klik */
+  z-index: 99;                  /* Layer paling atas (melapisi tabel) */
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
