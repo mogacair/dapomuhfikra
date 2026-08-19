@@ -32,11 +32,16 @@ body {
 }
 
 /* ======================================================= */
-/* PENGATURAN CETAK PDF LANDSCAPE (DATA SISWA)             */
+/* PENGATURAN CETAK PDF LAPORAN & RAPOR SISWA              */
 /* ======================================================= */
 @page {
-  size: A4 landscape;
-  margin: 10mm 12mm;
+  size: A4 portrait;
+  margin: 15mm 15mm 15mm 15mm;
+}
+
+.page-break {
+  page-break-after: always;
+  break-after: page;
 }
 
 @media print {
@@ -48,35 +53,20 @@ body {
   }
 
   #app-frame {
-    max-width: 100% !important;
-    width: 100% !important;
-    height: auto !important;
-    box-shadow: none !important;
-    border: none !important;
-    background: white !important;
+    display: none !important;
   }
 
   .no-print {
     display: none !important;
   }
 
-  /* Sembunyikan view lainnya saat print */
-  #view-dashboard,
-  #view-rapot-guru,
-  #view-rapot-mapel,
-  #view-rapot-input,
-  #modal-detail,
-  #toast-exit,
-  #table-screen-wrapper {
-    display: none !important;
-  }
-
-  /* Tampilkan view siswa dan area cetak */
-  #view-siswa {
+  /* Tampilkan area cetak rapor lengkap */
+  #print-section-rapor-lengkap {
     display: block !important;
-    padding: 0 !important;
+    width: 100% !important;
   }
 
+  /* Jika mencetak Data Siswa biasa */
   #print-section-siswa {
     display: block !important;
   }
