@@ -10,7 +10,7 @@ const STORAGE_KEY_NILAI = "DAPODIK_NILAI_INPUT_CACHE";
 // ============================================================
 // KONFIGURASI LOGO WATERMARK RAPOR (BISA DIGANTI URL/FILE ANDA)
 // ============================================================
-const WATERMARK_LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7b38oVbH1Yp9E0x2A6Oq8L1k9VqB_T9z6u_N9mK1s6aB/s1600/logo-tut-wuri-handayani.png";
+const WATERMARK_LOGO_URL = "Asset12.png";
 
 // Data Master Guru & Mapel yang Diampu
 const DATA_GURU_MAPEL = [
