@@ -6,9 +6,10 @@
  */
 
 const STORAGE_KEY_NILAI = "DAPODIK_NILAI_INPUT_CACHE";
+const STORAGE_KEY_CP = "DAPODIK_CP_MAPEL_CACHE";
 
 // ============================================================
-// KONFIGURASI FILE WATERMARK LOGO SEKOLAH (PATH RELATIF)
+// KONFIGURASI FILE WATERMARK LOGO SEKOLAH
 // ============================================================
 const WATERMARK_LOGO_FILE = "./Asset12.png";
 
@@ -40,17 +41,25 @@ const DATA_GURU_MAPEL = [
   }
 ];
 
-// State Penilaian Aktif
+// State Penilaian & Deskripsi CP Aktif
 let activeGuru = null;
 let activeMapel = null;
 let activeKelasWali = null;
 let DB_NILAI_STORE = {};
+let DB_CP_STORE = {}; // key = `${kelas}_${mapelId}`
 
 document.addEventListener('DOMContentLoaded', () => {
   const cachedNilai = localStorage.getItem(STORAGE_KEY_NILAI);
   if (cachedNilai) {
     try {
       DB_NILAI_STORE = JSON.parse(cachedNilai);
+    } catch (e) {}
+  }
+
+  const cachedCP = localStorage.getItem(STORAGE_KEY_CP);
+  if (cachedCP) {
+    try {
+      DB_CP_STORE = JSON.parse(cachedCP);
     } catch (e) {}
   }
 
@@ -418,7 +427,7 @@ function downloadExcelRapotInput() {
 
 /**
  * ============================================================
- * 2. ALUR MENU WALI KELAS & CETAK RAPOR SISWA (PDF & EXCEL)
+ * 2. ALUR MENU WALI KELAS & INPUT CP / CAPAIAN PEMBELAJARAN
  * ============================================================
  */
 
@@ -470,22 +479,84 @@ function selectKelasWali(kelasName) {
   const siswaList = DATA_SISWA.filter(s => s.kelas === kelasName);
   document.getElementById('badge-total-siswa-wali').innerText = `${siswaList.length} Siswa`;
 
-  const tbody = document.getElementById('tbody-wali-siswa');
-  if (tbody) {
-    tbody.innerHTML = '';
-    siswaList.forEach((s, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="py-2.5 px-3 text-center font-bold text-slate-500">${idx + 1}</td>
-        <td class="py-2.5 px-3 font-bold text-slate-800">${s.nama}</td>
-        <td class="py-2.5 px-3 font-mono text-slate-600 text-xs">${s.nisn || '-'}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+  // Render form input Capaian Pembelajaran (CP) per mapel
+  renderInputCPMapel(kelasName);
 
   history.pushState({ page: 'rapot_cetak_wali', kelas: kelasName }, 'Cetak Rapor', '');
   applyViewState({ page: 'rapot_cetak_wali', kelas: kelasName });
+}
+
+/**
+ * Render Input Textarea Capaian Pembelajaran (CP) untuk Setiap Mapel
+ */
+function renderInputCPMapel(kelasName) {
+  const container = document.getElementById('container-input-cp');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // Kumpulkan seluruh mapel dari DATA_GURU_MAPEL
+  let allMapelList = [];
+  DATA_GURU_MAPEL.forEach(guru => {
+    guru.mapel.forEach(m => {
+      allMapelList.push({
+        mapelId: m.id,
+        namaMapel: m.namaMapel,
+        guruNama: guru.nama
+      });
+    });
+  });
+
+  allMapelList.forEach((m, idx) => {
+    const cpKey = `${kelasName}_${m.mapelId}`;
+    const defaultText = `Menunjukkan penguasaan yang sangat baik dalam memahami konsep dasar materi serta mampu mempraktikkan keterampilan kejuruan sesuai tujuan pembelajaran.`;
+    const savedText = DB_CP_STORE[cpKey] !== undefined ? DB_CP_STORE[cpKey] : defaultText;
+
+    const div = document.createElement('div');
+    div.className = "p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col gap-1.5";
+
+    div.innerHTML = `
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-800">${idx + 1}. ${m.namaMapel}</span>
+        <span class="text-[10px] text-slate-500 font-medium">${m.guruNama}</span>
+      </div>
+      <textarea 
+        id="textarea-cp-${m.mapelId}" 
+        rows="2" 
+        placeholder="Tuliskan capaian pembelajaran / kompetensi siswa..."
+        class="w-full text-xs md:text-sm p-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-brand-green transition-all leading-relaxed"
+      >${savedText}</textarea>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function simpanCPKeState() {
+  let allMapelList = [];
+  DATA_GURU_MAPEL.forEach(guru => {
+    guru.mapel.forEach(m => {
+      allMapelList.push(m.id);
+    });
+  });
+
+  allMapelList.forEach(mapelId => {
+    const el = document.getElementById(`textarea-cp-${mapelId}`);
+    if (el) {
+      const cpKey = `${activeKelasWali}_${mapelId}`;
+      DB_CP_STORE[cpKey] = el.value.trim();
+    }
+  });
+
+  localStorage.setItem(STORAGE_KEY_CP, JSON.stringify(DB_CP_STORE));
+  alert(`Capaian Pembelajaran (CP) untuk Kelas ${activeKelasWali} berhasil disimpan!`);
+}
+
+function getCapaianKompetensi(kelasName, mapelId) {
+  const cpKey = `${kelasName}_${mapelId}`;
+  if (DB_CP_STORE[cpKey] && DB_CP_STORE[cpKey].trim() !== '') {
+    return DB_CP_STORE[cpKey].trim();
+  }
+  return "Menunjukkan penguasaan materi yang baik dan mampu mengaplikasikannya dalam tugas praktik kejuruan.";
 }
 
 function getKonsentrasiKeahlian(kelasName) {
@@ -522,7 +593,7 @@ function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
 }
 
 /**
- * 3. CETAK RAPOR PDF WALI KELAS (REVISI: HANYA SATU KOLOM 'NILAI')
+ * 3. CETAK RAPOR PDF WALI KELAS (KOLOM KOMPETENSI LEBAR 50% & WATERMARK)
  */
 async function cetakPDFRaporSiswa() {
   const container = document.getElementById('print-section-rapor-lengkap');
@@ -564,24 +635,21 @@ async function cetakPDFRaporSiswa() {
     allMapelList.forEach((m, mIdx) => {
       const nilaiTeori = getNilaiTeoriSiswa(m.guruId, m.mapelId, siswa.kelas, siswa.nisn);
       const nilaiPraktek = nilaiTeori + 5;
-      
-      // FORMULA NILAI: (75% Nilai Praktek + 25% Nilai Teori)
       const nilaiAkhir = Math.round((0.75 * nilaiPraktek) + (0.25 * nilaiTeori));
+      const deskripsiCP = getCapaianKompetensi(siswa.kelas, m.mapelId);
 
       rowsHtml += `
         <tr>
-          <td style="border: 1px solid black; padding: 6px 4px; text-align: center;">${mIdx + 1}</td>
-          <td style="border: 1px solid black; padding: 6px 8px; font-weight: 600;">${m.namaMapel}</td>
-          <td style="border: 1px solid black; padding: 6px 4px; text-align: center; font-weight: bold; font-size: 10.5pt;">${nilaiAkhir}</td>
-          <td style="border: 1px solid black; padding: 6px 4px; text-align: center;">-</td>
+          <td style="border: 1px solid black; padding: 6px 4px; text-align: center; vertical-align: top;">${mIdx + 1}</td>
+          <td style="border: 1px solid black; padding: 6px 8px; font-weight: 600; vertical-align: top;">${m.namaMapel}</td>
+          <td style="border: 1px solid black; padding: 6px 4px; text-align: center; font-weight: bold; font-size: 10.5pt; vertical-align: top;">${nilaiAkhir}</td>
+          <td style="border: 1px solid black; padding: 6px 8px; text-align: justify; font-size: 8.5pt; line-height: 1.35; vertical-align: top;">${deskripsiCP}</td>
         </tr>
       `;
     });
 
     pageWrapper.innerHTML = `
-      <!-- ============================================================ -->
-      <!-- WATERMARK LOGO SEKOLAH (INLINE STYLE TENGAH, LAYER ATAS, 15%) -->
-      <!-- ============================================================ -->
+      <!-- WATERMARK LOGO SEKOLAH -->
       <img src="${WATERMARK_LOGO_FILE}" 
            alt="Watermark" 
            class="watermark-img" 
@@ -624,14 +692,14 @@ async function cetakPDFRaporSiswa() {
           </table>
         </div>
 
-        <!-- TABEL 1: DAFTAR NILAI MAPEL (REVISI: HEADER HANYA 'NILAI') -->
+        <!-- TABEL 1: DAFTAR NILAI MAPEL (KOLOM KOMPETENSI LEBAR 50%) -->
         <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 14px;">
           <thead>
             <tr style="background-color: #f3f4f6;">
-              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 35px;">No</th>
-              <th style="border: 1px solid black; padding: 6px 8px; text-align: left;">Mata Pelajaran</th>
-              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 85px;">Nilai</th>
-              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 140px;">Capaian Kompetensi</th>
+              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 30px;">No</th>
+              <th style="border: 1px solid black; padding: 6px 8px; text-align: left; width: 38%;">Mata Pelajaran</th>
+              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 12%;">Nilai</th>
+              <th style="border: 1px solid black; padding: 6px 8px; text-align: center; width: 50%;">Capaian Kompetensi</th>
             </tr>
           </thead>
           <tbody>
@@ -735,7 +803,7 @@ async function cetakPDFRaporSiswa() {
 }
 
 /**
- * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER (NT, NP, NA & KOLOM RINGKAS)
+ * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER
  */
 function downloadExcelRaporWali() {
   const siswaList = DATA_SISWA.filter(s => s.kelas === activeKelasWali);
