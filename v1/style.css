@@ -31,7 +31,9 @@ body {
   scrollbar-color: #334155 #e2e8f0;
 }
 
-/* Pengaturan Cetak PDF Landscape */
+/* ======================================================= */
+/* PENGATURAN CETAK PDF LANDSCAPE (DATA SISWA)             */
+/* ======================================================= */
 @page {
   size: A4 landscape;
   margin: 10mm 12mm;
@@ -58,15 +60,24 @@ body {
     display: none !important;
   }
 
+  /* Sembunyikan view lainnya saat print */
   #view-dashboard,
   #view-rapot-guru,
   #view-rapot-mapel,
+  #view-rapot-input,
   #modal-detail,
-  #toast-exit {
+  #toast-exit,
+  #table-screen-wrapper {
     display: none !important;
   }
 
-  #table-screen-wrapper {
-    display: none !important;
+  /* Tampilkan view siswa dan area cetak */
+  #view-siswa {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  #print-section-siswa {
+    display: block !important;
   }
 }
