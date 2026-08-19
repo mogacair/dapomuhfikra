@@ -7,6 +7,11 @@
 
 const STORAGE_KEY_NILAI = "DAPODIK_NILAI_INPUT_CACHE";
 
+// ============================================================
+// KONFIGURASI LOGO WATERMARK RAPOR (BISA DIGANTI URL/FILE ANDA)
+// ============================================================
+const WATERMARK_LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7b38oVbH1Yp9E0x2A6Oq8L1k9VqB_T9z6u_N9mK1s6aB/s1600/logo-tut-wuri-handayani.png";
+
 // Data Master Guru & Mapel yang Diampu
 const DATA_GURU_MAPEL = [
   {
@@ -50,6 +55,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   renderGuruCards();
+
+  // Reset tampilan setelah dialog print selesai (agar tidak berantakan)
+  window.addEventListener("afterprint", () => {
+    const printContainer = document.getElementById('print-section-rapor-lengkap');
+    if (printContainer) {
+      printContainer.innerHTML = '';
+      printContainer.classList.add('hidden');
+    }
+  });
 });
 
 function onDataSiswaUpdated() {
@@ -410,9 +424,6 @@ function downloadExcelRapotInput() {
  * ============================================================
  */
 
-/**
- * Render Cardboard Daftar Kelas pada Menu Wali Kelas
- */
 function renderKelasWaliCards() {
   const container = document.getElementById('list-kelas-wali');
   if (!container) return;
@@ -454,9 +465,6 @@ function renderKelasWaliCards() {
   });
 }
 
-/**
- * Saat Kelas Bimbingan Diklik oleh Wali Kelas
- */
 function selectKelasWali(kelasName) {
   activeKelasWali = kelasName;
 
@@ -464,7 +472,6 @@ function selectKelasWali(kelasName) {
   const siswaList = DATA_SISWA.filter(s => s.kelas === kelasName);
   document.getElementById('badge-total-siswa-wali').innerText = `${siswaList.length} Siswa`;
 
-  // Render daftar siswa di kelas tersebut
   const tbody = document.getElementById('tbody-wali-siswa');
   if (tbody) {
     tbody.innerHTML = '';
@@ -483,9 +490,6 @@ function selectKelasWali(kelasName) {
   applyViewState({ page: 'rapot_cetak_wali', kelas: kelasName });
 }
 
-/**
- * Helper: Tentukan Konsentrasi Keahlian & Fase Berdasarkan Nama Kelas
- */
 function getKonsentrasiKeahlian(kelasName) {
   const klsUpper = (kelasName || "").toUpperCase();
   if (klsUpper.includes("TKJ") || klsUpper.includes("TJKT")) {
@@ -497,7 +501,7 @@ function getKonsentrasiKeahlian(kelasName) {
   if (klsUpper.includes("BD") || klsUpper.includes("BISNIS")) {
     return "Bisnis Digital";
   }
-  return "Teknik Komputer dan Jaringan"; // Default
+  return "Teknik Komputer dan Jaringan";
 }
 
 function getFaseKelas(kelasName) {
@@ -508,23 +512,19 @@ function getFaseKelas(kelasName) {
   return "F";
 }
 
-/**
- * Helper: Ambil Nilai Teori Siswa untuk Suatu Mapel dari Storage
- */
 function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
   const tapel = "2026/2027";
-  const jenis = "PTS Ganjil"; // Baseline
+  const jenis = "PTS Ganjil";
   const storeKey = `${guruId}_${mapelId}_${tapel}_${kelas}_${jenis}`;
   const store = DB_NILAI_STORE[storeKey];
   if (store && store[nisn] !== undefined && store[nisn] !== '') {
     return Number(store[nisn]);
   }
-  // Nilai default sampel jika belum diinput guru
-  return 78;
+  return 78; // Nilai default sampel
 }
 
 /**
- * 3. CETAK RAPOR PDF WALI KELAS (1 SISWA PER HALAMAN)
+ * 3. CETAK RAPOR PDF WALI KELAS (DILENGKAPI WATERMARK & TABEL TAMBAHAN)
  */
 function cetakPDFRaporSiswa() {
   const container = document.getElementById('print-section-rapor-lengkap');
@@ -543,7 +543,7 @@ function cetakPDFRaporSiswa() {
   const konsentrasi = getKonsentrasiKeahlian(activeKelasWali);
   const fase = getFaseKelas(activeKelasWali);
 
-  // Kumpulkan semua mata pelajaran yang ada di sekolah
+  // Daftar seluruh mata pelajaran
   let allMapelList = [];
   DATA_GURU_MAPEL.forEach(guru => {
     guru.mapel.forEach(m => {
@@ -556,98 +556,156 @@ function cetakPDFRaporSiswa() {
     });
   });
 
-  // Susun Halaman Rapor untuk Setiap Siswa (1 Halaman per Siswa)
+  // Susun Halaman Rapor untuk Setiap Siswa
   siswaList.forEach((siswa, sIdx) => {
     const pageWrapper = document.createElement('div');
-    // Class page-break memastikan tiap siswa ganti kertas otomatis
-    pageWrapper.className = sIdx < siswaList.length - 1 ? "page-break mb-8 text-black" : "text-black";
+    pageWrapper.className = sIdx < siswaList.length - 1 ? "page-break watermark-container p-4 text-black relative" : "watermark-container p-4 text-black relative";
 
     let rowsHtml = "";
     allMapelList.forEach((m, mIdx) => {
       const nilaiTeori = getNilaiTeoriSiswa(m.guruId, m.mapelId, siswa.kelas, siswa.nisn);
-      const nilaiPraktek = nilaiTeori + 5; // Nilai Praktek = Teori + 5
+      const nilaiPraktek = nilaiTeori + 5;
       
-      // FORMULA NILAI AKHIR = (75% Nilai Praktek + 25% Nilai Teori) / 2
-      const nilaiAkhir = (((0.75 * nilaiPraktek) + (0.25 * nilaiTeori)) / 2).toFixed(1);
+      // FORMULA NILAI AKHIR (Tanpa dibagi 2): 75% Nilai Praktek + 25% Nilai Teori
+      const nilaiAkhir = Math.round((0.75 * nilaiPraktek) + (0.25 * nilaiTeori));
 
       rowsHtml += `
         <tr>
-          <td style="border: 1px solid black; padding: 6px; text-align: center;">${mIdx + 1}</td>
-          <td style="border: 1px solid black; padding: 6px; font-weight: 600;">${m.namaMapel}</td>
-          <td style="border: 1px solid black; padding: 6px; text-align: center;">${nilaiTeori}</td>
-          <td style="border: 1px solid black; padding: 6px; text-align: center;">${nilaiPraktek}</td>
-          <td style="border: 1px solid black; padding: 6px; text-align: center; font-weight: bold;">${nilaiAkhir}</td>
-          <td style="border: 1px solid black; padding: 6px; text-align: center;">-</td>
+          <td style="border: 1px solid black; padding: 5px; text-align: center;">${mIdx + 1}</td>
+          <td style="border: 1px solid black; padding: 5px; font-weight: 600;">${m.namaMapel}</td>
+          <td style="border: 1px solid black; padding: 5px; text-align: center;">${nilaiTeori}</td>
+          <td style="border: 1px solid black; padding: 5px; text-align: center;">${nilaiPraktek}</td>
+          <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">${nilaiAkhir}</td>
+          <td style="border: 1px solid black; padding: 5px; text-align: center;">-</td>
         </tr>
       `;
     });
 
     pageWrapper.innerHTML = `
-      <!-- JUDUL RAPOR (Center, Bold, 14pt) -->
-      <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 18px; line-height: 1.3;">
-        <div>LAPORAN HASIL BELAJAR (RAPOR)</div>
-        <div style="font-size: 12pt; font-weight: bold; margin-top: 2px;">Tahun Pelajaran : ${tapel}</div>
-        <div style="font-size: 11pt; font-weight: 600; margin-top: 2px;">Kelas / Fase : ${siswa.kelas} / ${fase}, Semester : ${semester}</div>
-      </div>
+      <!-- WATERMARK LOGO SEKOLAH (TRANSPARANSI 25%) -->
+      <div class="watermark-bg" style="background-image: url('${WATERMARK_LOGO_URL}');"></div>
 
-      <!-- IDENTITAS SISWA (Left, Bold, 12pt) -->
-      <div style="font-size: 11pt; font-weight: bold; margin-bottom: 14px; line-height: 1.5;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="width: 220px; vertical-align: top;">Nama Peserta Didik</td>
-            <td style="width: 15px; vertical-align: top;">:</td>
-            <td style="vertical-align: top; text-transform: uppercase;">${siswa.nama}</td>
-          </tr>
-          <tr>
-            <td style="vertical-align: top;">NISN</td>
-            <td style="vertical-align: top;">:</td>
-            <td style="vertical-align: top; font-family: monospace;">${siswa.nisn || '-'}</td>
-          </tr>
-          <tr>
-            <td style="vertical-align: top;">Alamat</td>
-            <td style="vertical-align: top;">:</td>
-            <td style="vertical-align: top; font-weight: 500;">${siswa.alamat || '-'}</td>
-          </tr>
-          <tr>
-            <td style="vertical-align: top;">Konsentrasi Keahlian</td>
-            <td style="vertical-align: top;">:</td>
-            <td style="vertical-align: top;">${konsentrasi}</td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- TABEL DAFTAR NILAI MAPEL -->
-      <table style="width: 100%; border-collapse: collapse; font-size: 10pt; margin-bottom: 25px;">
-        <thead>
-          <tr style="background-color: #f3f4f6;">
-            <th style="border: 1px solid black; padding: 7px 4px; text-align: center; width: 35px;">No</th>
-            <th style="border: 1px solid black; padding: 7px 8px; text-align: left;">Mata Pelajaran</th>
-            <th style="border: 1px solid black; padding: 7px 4px; text-align: center; width: 75px;">Nilai Teori</th>
-            <th style="border: 1px solid black; padding: 7px 4px; text-align: center; width: 85px;">Nilai Praktek</th>
-            <th style="border: 1px solid black; padding: 7px 4px; text-align: center; width: 75px;">Nilai Akhir</th>
-            <th style="border: 1px solid black; padding: 7px 4px; text-align: center; width: 130px;">Capaian Kompetensi</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rowsHtml}
-        </tbody>
-      </table>
-
-      <!-- TANDA TANGAN RAPOR -->
-      <div style="display: flex; justify-content: space-between; font-size: 10pt; margin-top: 30px;">
-        <div style="text-align: center; width: 200px;">
-          <div>Mengetahui,</div>
-          <div style="margin-top: 2px;">Orang Tua / Wali Siswa</div>
-          <div style="height: 60px;"></div>
-          <div style="font-weight: bold; text-decoration: underline;">( ......................................... )</div>
+      <div style="position: relative; z-index: 1;">
+        <!-- JUDUL RAPOR (Center, Bold, 14pt) -->
+        <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 14px; line-height: 1.3;">
+          <div>LAPORAN HASIL BELAJAR (RAPOR)</div>
+          <div style="font-size: 12pt; font-weight: bold; margin-top: 2px;">Tahun Pelajaran : ${tapel}</div>
+          <div style="font-size: 11pt; font-weight: 600; margin-top: 2px;">Kelas / Fase : ${siswa.kelas} / ${fase}, Semester : ${semester}</div>
         </div>
 
-        <div style="text-align: center; width: 220px;">
-          <div>Grogol, 19 Agustus 2026</div>
-          <div style="margin-top: 2px; font-weight: bold;">Wali Kelas</div>
-          <div style="height: 60px;"></div>
-          <div style="font-weight: bold; text-decoration: underline;">( _________________________ )</div>
-          <div style="font-size: 9pt;">NIP. .........................................</div>
+        <!-- IDENTITAS SISWA (Left, Bold, 12pt) -->
+        <div style="font-size: 11pt; font-weight: bold; margin-bottom: 12px; line-height: 1.4;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="width: 200px; vertical-align: top;">Nama Peserta Didik</td>
+              <td style="width: 15px; vertical-align: top;">:</td>
+              <td style="vertical-align: top; text-transform: uppercase;">${siswa.nama}</td>
+            </tr>
+            <tr>
+              <td style="vertical-align: top;">NISN</td>
+              <td style="vertical-align: top;">:</td>
+              <td style="vertical-align: top; font-family: monospace;">${siswa.nisn || '-'}</td>
+            </tr>
+            <tr>
+              <td style="vertical-align: top;">Alamat</td>
+              <td style="vertical-align: top;">:</td>
+              <td style="vertical-align: top; font-weight: 500;">${siswa.alamat || '-'}</td>
+            </tr>
+            <tr>
+              <td style="vertical-align: top;">Konsentrasi Keahlian</td>
+              <td style="vertical-align: top;">:</td>
+              <td style="vertical-align: top;">${konsentrasi}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- TABEL 1: DAFTAR NILAI MAPEL -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 14px;">
+          <thead>
+            <tr style="background-color: #f3f4f6;">
+              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 30px;">No</th>
+              <th style="border: 1px solid black; padding: 6px 8px; text-align: left;">Mata Pelajaran</th>
+              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 75px;">Nilai Teori</th>
+              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 80px;">Nilai Praktek</th>
+              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 75px;">Nilai Akhir</th>
+              <th style="border: 1px solid black; padding: 6px 4px; text-align: center; width: 120px;">Capaian Kompetensi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        <!-- TABEL 2 & 3 BERDAMPINGAN: EKSTRAKURIKULER & KETIDAKHADIRAN -->
+        <div style="display: flex; gap: 14px; margin-bottom: 20px;">
+          <!-- TABEL 2: EKSTRAKURIKULER -->
+          <div style="flex: 1;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt;">
+              <thead>
+                <tr style="background-color: #f3f4f6;">
+                  <th style="border: 1px solid black; padding: 5px; text-align: center; width: 30px;">No</th>
+                  <th style="border: 1px solid black; padding: 5px; text-align: left;">Kegiatan Ekstrakurikuler</th>
+                  <th style="border: 1px solid black; padding: 5px; text-align: center; width: 80px;">Keterangan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="border: 1px solid black; padding: 5px; text-align: center;">1</td>
+                  <td style="border: 1px solid black; padding: 5px; font-weight: 500;">Hizbul Wathon</td>
+                  <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">Baik</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid black; padding: 5px; text-align: center;">2</td>
+                  <td style="border: 1px solid black; padding: 5px; font-weight: 500;">Tapak Suci</td>
+                  <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">Baik</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- TABEL 3: KETIDAKHADIRAN -->
+          <div style="flex: 1;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt;">
+              <thead>
+                <tr style="background-color: #f3f4f6;">
+                  <th style="border: 1px solid black; padding: 5px; text-align: left;">Ketidakhadiran</th>
+                  <th style="border: 1px solid black; padding: 5px; text-align: center; width: 100px;">Jumlah</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="border: 1px solid black; padding: 5px;">Sakit</td>
+                  <td style="border: 1px solid black; padding: 5px; text-align: center;">...... Hari</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid black; padding: 5px;">Izin</td>
+                  <td style="border: 1px solid black; padding: 5px; text-align: center;">...... Hari</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid black; padding: 5px;">Tanpa Keterangan</td>
+                  <td style="border: 1px solid black; padding: 5px; text-align: center;">...... Hari</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TANDA TANGAN RAPOR -->
+        <div style="display: flex; justify-content: space-between; font-size: 10pt; margin-top: 15px;">
+          <div style="text-align: center; width: 200px;">
+            <div>Mengetahui,</div>
+            <div style="margin-top: 2px;">Orang Tua / Wali Siswa</div>
+            <div style="height: 55px;"></div>
+            <div style="font-weight: bold; text-decoration: underline;">( ......................................... )</div>
+          </div>
+
+          <div style="text-align: center; width: 220px;">
+            <div>Grogol, 19 Agustus 2026</div>
+            <div style="margin-top: 2px; font-weight: bold;">Wali Kelas</div>
+            <div style="height: 55px;"></div>
+            <div style="font-weight: bold; text-decoration: underline;">( _________________________ )</div>
+            <div style="font-size: 9pt;">NIP. .........................................</div>
+          </div>
         </div>
       </div>
     `;
@@ -655,15 +713,14 @@ function cetakPDFRaporSiswa() {
     container.appendChild(pageWrapper);
   });
 
-  // Tampilkan container cetak
   container.classList.remove('hidden');
 
-  // Trigger dialog print
+  // Trigger print dialog
   window.print();
 }
 
 /**
- * 4. CETAK RAPOR EXCEL WALI KELAS
+ * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER LENGKAP
  */
 function downloadExcelRaporWali() {
   const siswaList = DATA_SISWA.filter(s => s.kelas === activeKelasWali);
@@ -675,8 +732,9 @@ function downloadExcelRaporWali() {
 
   const tapel = "2026/2027";
   const semester = "Ganjil";
-  const konsentrasi = getKonsentrasiKeahlian(activeKelasWali);
+  const fase = getFaseKelas(activeKelasWali);
 
+  // Kumpulkan mapel
   let allMapelList = [];
   DATA_GURU_MAPEL.forEach(guru => {
     guru.mapel.forEach(m => {
@@ -688,46 +746,116 @@ function downloadExcelRaporWali() {
     });
   });
 
-  const exportRows = [];
-
-  siswaList.forEach((s, sIdx) => {
-    allMapelList.forEach((m, mIdx) => {
-      const nilaiTeori = getNilaiTeoriSiswa(m.guruId, m.mapelId, s.kelas, s.nisn);
-      const nilaiPraktek = nilaiTeori + 5;
-      const nilaiAkhir = Number((((0.75 * nilaiPraktek) + (0.25 * nilaiTeori)) / 2).toFixed(1));
-
-      exportRows.push({
-        "No": sIdx + 1,
-        "Nama Peserta Didik": s.nama,
-        "NISN": s.nisn || "-",
-        "Kelas": s.kelas,
-        "Konsentrasi Keahlian": konsentrasi,
-        "Mata Pelajaran": m.namaMapel,
-        "Nilai Teori": nilaiTeori,
-        "Nilai Praktek": nilaiPraktek,
-        "Nilai Akhir": nilaiAkhir,
-        "Capaian Kompetensi": ""
-      });
-    });
-  });
-
-  const ws = XLSX.utils.json_to_sheet(exportRows);
-  ws['!cols'] = [
-    { wch: 6 },
-    { wch: 35 },
-    { wch: 18 },
-    { wch: 12 },
-    { wch: 30 },
-    { wch: 32 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 12 },
-    { wch: 20 }
+  // Susun Baris Judul Atas
+  const sheetData = [
+    ["LEGGER RAPOR"],
+    [`Tahun Pelajaran: ${tapel}`],
+    [`Kelas / Fase: ${activeKelasWali} / ${fase}, Semester: ${semester}`],
+    [] // Baris kosong pemisah
   ];
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `Rapor_${activeKelasWali}`);
+  // Baris Header 1 (Nama Kolom & Nama Mapel)
+  const headerRow1 = ["NO", "NISN", "NAMA PESERTA DIDIK"];
+  const headerRow2 = ["", "", ""];
 
-  const fileName = `Rapor_Kelas_${activeKelasWali}_${tapel.replace(/[\/\\]/g, '-')}_Semester_${semester}.xlsx`;
+  allMapelList.forEach(m => {
+    headerRow1.push(m.namaMapel, "", "");
+    headerRow2.push("Nilai Teori", "Praktek", "Nilai Akhir");
+  });
+
+  headerRow1.push("TOTAL NILAI", "PERINGKAT");
+  headerRow2.push("", "");
+
+  sheetData.push(headerRow1);
+  sheetData.push(headerRow2);
+
+  // Hitung total nilai siswa untuk menentukan peringkat
+  const calculatedRows = siswaList.map((s, sIdx) => {
+    let totalScore = 0;
+    const scores = [];
+
+    allMapelList.forEach(m => {
+      const nilaiTeori = getNilaiTeoriSiswa(m.guruId, m.mapelId, s.kelas, s.nisn);
+      const nilaiPraktek = nilaiTeori + 5;
+      const nilaiAkhir = Math.round((0.75 * nilaiPraktek) + (0.25 * nilaiTeori));
+
+      scores.push(nilaiTeori, nilaiPraktek, nilaiAkhir);
+      totalScore += nilaiAkhir;
+    });
+
+    return {
+      index: sIdx + 1,
+      nisn: s.nisn || "-",
+      nama: s.nama,
+      scores: scores,
+      totalScore: totalScore
+    };
+  });
+
+  // Urutkan untuk penentuan peringkat
+  const sortedByScore = [...calculatedRows].sort((a, b) => b.totalScore - a.totalScore);
+  const rankMap = {};
+  sortedByScore.forEach((item, rIdx) => {
+    rankMap[item.nisn] = rIdx + 1;
+  });
+
+  // Masukkan data siswa ke sheetData
+  calculatedRows.forEach(row => {
+    sheetData.push([
+      row.index,
+      row.nisn,
+      row.nama,
+      ...row.scores,
+      row.totalScore,
+      rankMap[row.nisn]
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+  // Konfigurasi Merge Cells untuk Header Legger
+  const merges = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }, // Judul
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } }, // Tapel
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } }, // Kelas
+    { s: { r: 4, c: 0 }, e: { r: 5, c: 0 } }, // NO
+    { s: { r: 4, c: 1 }, e: { r: 5, c: 1 } }, // NISN
+    { s: { r: 4, c: 2 }, e: { r: 5, c: 2 } }  // NAMA
+  ];
+
+  let colOffset = 3;
+  allMapelList.forEach(() => {
+    merges.push({
+      s: { r: 4, c: colOffset },
+      e: { r: 4, c: colOffset + 2 }
+    });
+    colOffset += 3;
+  });
+
+  merges.push(
+    { s: { r: 4, c: colOffset }, e: { r: 5, c: colOffset } },       // TOTAL NILAI
+    { s: { r: 4, c: colOffset + 1 }, e: { r: 5, c: colOffset + 1 } } // PERINGKAT
+  );
+
+  ws['!merges'] = merges;
+
+  // Atur Lebar Kolom
+  const cols = [
+    { wch: 6 },  // NO
+    { wch: 18 }, // NISN
+    { wch: 35 }  // NAMA
+  ];
+
+  allMapelList.forEach(() => {
+    cols.push({ wch: 12 }, { wch: 10 }, { wch: 12 });
+  });
+
+  cols.push({ wch: 14 }, { wch: 12 });
+  ws['!cols'] = cols;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `Legger_${activeKelasWali}`);
+
+  const fileName = `Legger_Rapor_Kelas_${activeKelasWali}_${tapel.replace(/[\/\\]/g, '-')}_Semester_${semester}.xlsx`;
   XLSX.writeFile(wb, fileName);
 }
