@@ -10,7 +10,7 @@ const STORAGE_KEY_NILAI = "DAPODIK_NILAI_INPUT_CACHE";
 // ============================================================
 // KONFIGURASI LOGO WATERMARK RAPOR (BISA DIGANTI URL/FILE ANDA)
 // ============================================================
-const WATERMARK_LOGO_URL = "Asset12.png";
+const WATERMARK_LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7b38oVbH1Yp9E0x2A6Oq8L1k9VqB_T9z6u_N9mK1s6aB/s1600/logo-tut-wuri-handayani.png";
 
 // Data Master Guru & Mapel yang Diampu
 const DATA_GURU_MAPEL = [
@@ -56,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderGuruCards();
 
-  // Reset tampilan setelah dialog print selesai agar DOM kembali bersih
   window.addEventListener("afterprint", () => {
     const printContainer = document.getElementById('print-section-rapor-lengkap');
     if (printContainer) {
@@ -369,7 +368,6 @@ function downloadExcelRapotInput() {
     const hasScore = rawScore !== undefined && rawScore !== '';
     const scoreNum = hasScore ? Number(rawScore) : null;
     
-    // Nilai Praktek = Nilai + 5
     const nilaiPraktek = hasScore ? (scoreNum + 5) : "-";
     const status = hasScore ? (scoreNum >= 75 ? "Tuntas" : "Belum Tuntas") : "Belum Dinilai";
 
@@ -524,7 +522,7 @@ function getNilaiTeoriSiswa(guruId, mapelId, kelas, nisn) {
 }
 
 /**
- * 3. CETAK RAPOR PDF WALI KELAS (REVISI: HEADER SEKOLAH, WATERMARK & TABEL TAMBAHAN)
+ * 3. CETAK RAPOR PDF WALI KELAS (WATERMARK TENGAH, LAYER ATAS 600px x 600px)
  */
 function cetakPDFRaporSiswa() {
   const container = document.getElementById('print-section-rapor-lengkap');
@@ -555,17 +553,16 @@ function cetakPDFRaporSiswa() {
     });
   });
 
-  // Susun lembar rapor per siswa
   siswaList.forEach((siswa, sIdx) => {
     const pageWrapper = document.createElement('div');
-    pageWrapper.className = sIdx < siswaList.length - 1 ? "page-break watermark-container p-4 text-black relative" : "watermark-container p-4 text-black relative";
+    pageWrapper.className = sIdx < siswaList.length - 1 
+      ? "page-break watermark-container p-4 text-black relative" 
+      : "watermark-container p-4 text-black relative";
 
     let rowsHtml = "";
     allMapelList.forEach((m, mIdx) => {
       const nilaiTeori = getNilaiTeoriSiswa(m.guruId, m.mapelId, siswa.kelas, siswa.nisn);
       const nilaiPraktek = nilaiTeori + 5;
-      
-      // FORMULA NILAI AKHIR (Tanpa dibagi 2): 75% Nilai Praktek + 25% Nilai Teori
       const nilaiAkhir = Math.round((0.75 * nilaiPraktek) + (0.25 * nilaiTeori));
 
       rowsHtml += `
@@ -581,11 +578,14 @@ function cetakPDFRaporSiswa() {
     });
 
     pageWrapper.innerHTML = `
-      <!-- WATERMARK LOGO SEKOLAH (TRANSPARANSI 25%) -->
+      <!-- ============================================================ -->
+      <!-- WATERMARK LOGO SEKOLAH (TENGAH, 600px x 600px, LAYER ATAS) -->
+      <!-- ============================================================ -->
       <div class="watermark-bg" style="background-image: url('${WATERMARK_LOGO_URL}');"></div>
 
+      <!-- KONTEN DOKUMEN RAPOR -->
       <div style="position: relative; z-index: 1;">
-        <!-- JUDUL RAPOR & NAMA SEKOLAH (Center, Bold, 14pt) -->
+        <!-- JUDUL RAPOR & NAMA SEKOLAH -->
         <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 14px; line-height: 1.3;">
           <div>LAPORAN HASIL BELAJAR (RAPOR)</div>
           <div>SMK Muhammadiyah 5 Karanganyar</div>
@@ -593,7 +593,7 @@ function cetakPDFRaporSiswa() {
           <div style="font-size: 11pt; font-weight: 600; margin-top: 2px;">Kelas / Fase : ${siswa.kelas} / ${fase}, Semester : ${semester}</div>
         </div>
 
-        <!-- IDENTITAS SISWA (Left, Bold, 11pt) -->
+        <!-- IDENTITAS SISWA -->
         <div style="font-size: 11pt; font-weight: bold; margin-bottom: 12px; line-height: 1.4;">
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
@@ -636,9 +636,8 @@ function cetakPDFRaporSiswa() {
           </tbody>
         </table>
 
-        <!-- TABEL 2 & 3 BERDAMPINGAN: EKSTRAKURIKULER & KETIDAKHADIRAN -->
+        <!-- TABEL 2 & 3: EKSTRAKURIKULER & KETIDAKHADIRAN -->
         <div style="display: flex; gap: 14px; margin-bottom: 20px;">
-          <!-- TABEL 2: EKSTRAKURIKULER -->
           <div style="flex: 1;">
             <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt;">
               <thead>
@@ -663,7 +662,6 @@ function cetakPDFRaporSiswa() {
             </table>
           </div>
 
-          <!-- TABEL 3: KETIDAKHADIRAN -->
           <div style="flex: 1;">
             <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt;">
               <thead>
@@ -718,7 +716,7 @@ function cetakPDFRaporSiswa() {
 }
 
 /**
- * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER (REVISI: NT, NP, NA & KOLOM RINGKAS)
+ * 4. CETAK RAPOR EXCEL WALI KELAS FORMAT LEGGER (NT, NP, NA & KOLOM RINGKAS)
  */
 function downloadExcelRaporWali() {
   const siswaList = DATA_SISWA.filter(s => s.kelas === activeKelasWali);
@@ -743,7 +741,6 @@ function downloadExcelRaporWali() {
     });
   });
 
-  // Susun Baris Judul Atas
   const sheetData = [
     ["LEGGER RAPOR"],
     [`Tahun Pelajaran: ${tapel}`],
@@ -751,7 +748,6 @@ function downloadExcelRaporWali() {
     []
   ];
 
-  // Baris Header 1 & 2 (Header Singkat: NT, NP, NA)
   const headerRow1 = ["NO", "NISN", "NAMA PESERTA DIDIK"];
   const headerRow2 = ["", "", ""];
 
@@ -766,7 +762,6 @@ function downloadExcelRaporWali() {
   sheetData.push(headerRow1);
   sheetData.push(headerRow2);
 
-  // Hitung total nilai & peringkat siswa
   const calculatedRows = siswaList.map((s, sIdx) => {
     let totalScore = 0;
     const scores = [];
@@ -808,7 +803,6 @@ function downloadExcelRaporWali() {
 
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-  // Merge Cells Header
   const merges = [
     { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
     { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
@@ -834,18 +828,17 @@ function downloadExcelRaporWali() {
 
   ws['!merges'] = merges;
 
-  // Lebar kolom ringkas (kolom angka NT, NP, NA hanya 5 karakter)
   const cols = [
-    { wch: 5 },  // NO
-    { wch: 16 }, // NISN
-    { wch: 28 }  // NAMA
+    { wch: 5 },
+    { wch: 16 },
+    { wch: 28 }
   ];
 
   allMapelList.forEach(() => {
-    cols.push({ wch: 5 }, { wch: 5 }, { wch: 5 }); // NT, NP, NA ringkas
+    cols.push({ wch: 5 }, { wch: 5 }, { wch: 5 });
   });
 
-  cols.push({ wch: 11 }, { wch: 10 }); // TOTAL NILAI, PERINGKAT
+  cols.push({ wch: 11 }, { wch: 10 });
   ws['!cols'] = cols;
 
   const wb = XLSX.utils.book_new();
