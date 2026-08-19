@@ -48,25 +48,25 @@ body {
 .watermark-container {
   position: relative;
   background-color: white;
-  min-height: 270mm;
+  min-height: 265mm;
 }
 
 /* ============================================================ */
-/* WATERMARK LOGO SEKOLAH (TENGAH, 520px, LAYER ATAS, OPACITY 10%) */
+/* WATERMARK LOGO SEKOLAH (TENGAH, LAYER ATAS, OPACITY 15%)     */
 /* ============================================================ */
-.watermark-bg {
+.watermark-img {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 520px;                 /* Ukuran 520px pas di A4 */
-  height: 520px;                /* Ukuran 520px pas di A4 */
-  opacity: 0.10;                /* Transparansi 10% */
-  pointer-events: none;         /* Agar tidak mengganggu seleksi teks/klik */
+  width: 380px;                 /* Ukuran proporsional tengah halaman */
+  max-width: 80%;
+  height: auto;
+  opacity: 0.15;                /* Transparansi 15% */
+  pointer-events: none;         /* Bebas seleksi teks dan klik */
   z-index: 99;                  /* Layer paling atas (melapisi tabel) */
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 @media print {
