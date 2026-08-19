@@ -1,11 +1,11 @@
 /**
  * ============================================================
- * DAPODIK MUHFIKRA - APP LOGIC (STABLE & HIGH RESILIENCE)
+ * DAPODIK MUHFIKRA - APP LOGIC (EXCEL & PDF EXPORT READY)
  * File: app.js
  * ============================================================
  */
 
-// URL Web App Google Apps Script Anda
+// URL Web App Google Apps Script
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxXWxCZ1TnX6oxk-Vx5d7ouIZ3tbxJojHclmEVzHLp_A9_YixKPqqj9TL3OyGj89oysfw/exec";
 const STORAGE_KEY = "DAPODIK_SISWA_CACHE";
 
@@ -20,10 +20,9 @@ let exitTimeout = null;
  * 1. INISIALISASI APLIKASI
  */
 document.addEventListener('DOMContentLoaded', () => {
-  // Pasang Level 1 (Dashboard) pada riwayat browser
   history.replaceState({ page: 'dashboard' }, 'Dashboard', '');
   
-  // 1. Muat data dari LocalStorage secara instan (0 detik)
+  // 1. Muat data dari LocalStorage secara instan
   const cachedData = localStorage.getItem(STORAGE_KEY);
   if (cachedData) {
     try {
@@ -42,13 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * 2. AMBIL DATA DARI GOOGLE APPS SCRIPT (GAS)
- * Dilengkapi 'redirect: follow' dan fallback cache yang aman
- * @param {boolean} isManualRefresh - True jika dipicu via tombol refresh
  */
 async function fetchDataFromGAS(isManualRefresh = false) {
   const tbodyScreen = document.getElementById('tbody-siswa');
 
-  // Tampilkan loading spinner jika belum ada data sama sekali atau user klik refresh manual
   if (DATA_SISWA.length === 0 || isManualRefresh) {
     tbodyScreen.innerHTML = `
       <tr>
@@ -61,7 +57,6 @@ async function fetchDataFromGAS(isManualRefresh = false) {
   }
 
   try {
-    // Mode redirect: 'follow' menangani alur redirection 302 dari server Google Apps Script
     const response = await fetch(GAS_WEB_APP_URL, {
       method: 'GET',
       redirect: 'follow'
@@ -75,11 +70,8 @@ async function fetchDataFromGAS(isManualRefresh = false) {
 
     if (result.status === "success") {
       DATA_SISWA = result.data;
-      
-      // Simpan ke local cache agar load berikutnya selalu instan
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA_SISWA));
 
-      // Perbarui dropdown filter dan tabel tampilan
       populateClassFilter(DATA_SISWA);
       filterDataSiswa();
     } else {
@@ -89,13 +81,11 @@ async function fetchDataFromGAS(isManualRefresh = false) {
   } catch (error) {
     console.error("Fetch GAS Error:", error);
     
-    // Jika data dari cache lokal sudah ada, jangan tampilkan error layar merah ke pengguna
     if (DATA_SISWA.length > 0) {
-      console.log("Koneksi gagal sementara, tetap menggunakan data cache lokal yang ada.");
+      console.log("Koneksi gagal sementara, tetap menggunakan data cache lokal.");
       return;
     }
 
-    // Tampilkan pesan error dan tombol Coba Lagi jika belum ada cache sama sekali
     tbodyScreen.innerHTML = `
       <tr>
         <td colspan="4" class="py-8 text-center text-red-600 font-bold text-sm">
@@ -111,14 +101,13 @@ async function fetchDataFromGAS(isManualRefresh = false) {
 }
 
 /**
- * 3. OTOMATISASI DAFTAR DROPDOWN KELAS SESUAI TAB SHEET
+ * 3. OTOMATISASI DAFTAR DROPDOWN KELAS SESUAI DATA SHEET
  */
 function populateClassFilter(dataList) {
   const select = document.getElementById('filter-kelas');
   if (!select) return;
 
   const currentVal = select.value;
-  // Ambil daftar kelas unik dan urutkan
   const kelasList = [...new Set(dataList.map(item => item.kelas).filter(k => k && k.trim() !== ""))].sort();
 
   select.innerHTML = '<option value="ALL">Semua Siswa</option>';
@@ -129,7 +118,6 @@ function populateClassFilter(dataList) {
     select.appendChild(opt);
   });
 
-  // Pertahankan filter kelas yang sedang aktif jika masih ada di daftar
   if (currentVal && (currentVal === 'ALL' || kelasList.includes(currentVal))) {
     select.value = currentVal;
   }
@@ -150,7 +138,6 @@ function openModalDetail(nisn) {
   const siswa = DATA_SISWA.find(s => s.nisn === nisn);
   if (!siswa) return;
 
-  // Masukkan rincian data ke elemen modal
   document.getElementById('det-nama').innerText = siswa.nama || '-';
   document.getElementById('det-nis').innerText = siswa.nis || '-';
   document.getElementById('det-nisn').innerText = siswa.nisn || '-';
@@ -159,7 +146,6 @@ function openModalDetail(nisn) {
   document.getElementById('det-ibu').innerText = siswa.ibu || '-';
   document.getElementById('det-alamat').innerText = siswa.alamat || '-';
 
-  // Daftarkan riwayat Level 3 di browser
   history.pushState({ page: 'siswa_detail', nisn: nisn }, 'Detail Siswa', '');
   applyViewState({ page: 'siswa_detail', nisn: nisn });
 }
@@ -179,7 +165,6 @@ function applyViewState(state) {
 
   const page = state ? state.page : 'dashboard';
 
-  // LEVEL 3: Modal Detail Siswa Terbuka
   if (page === 'siswa_detail') {
     viewDashboard.classList.add('hidden');
     viewSiswa.classList.remove('hidden');
@@ -188,7 +173,6 @@ function applyViewState(state) {
     headerTitle.innerText = "Detail Siswa";
     headerSubtitle.innerText = "Dapodik Muhfikra";
 
-    // Efek Slide-Up Modal
     modal.classList.remove('opacity-0', 'pointer-events-none');
     modal.classList.add('opacity-100');
     modalContent.classList.remove('translate-y-full', 'md:scale-95');
@@ -196,13 +180,11 @@ function applyViewState(state) {
     return;
   }
 
-  // Tutup Modal jika kembali ke level di bawahnya
   modalContent.classList.remove('translate-y-0', 'md:scale-100');
   modalContent.classList.add('translate-y-full', 'md:scale-95');
   modal.classList.remove('opacity-100');
   modal.classList.add('opacity-0', 'pointer-events-none');
 
-  // LEVEL 2: Halaman Data Siswa
   if (page === 'siswa') {
     viewDashboard.classList.add('hidden');
     viewSiswa.classList.remove('hidden');
@@ -213,7 +195,6 @@ function applyViewState(state) {
     return;
   }
 
-  // LEVEL 1: Dashboard Utama
   if (page === 'dashboard') {
     viewSiswa.classList.add('hidden');
     viewDashboard.classList.remove('hidden');
@@ -230,16 +211,13 @@ function applyViewState(state) {
 window.addEventListener('popstate', (event) => {
   const state = event.state;
 
-  // Jika kembali ke Level 1 (Dashboard Utama)
   if (!state || state.page === 'dashboard') {
     applyViewState({ page: 'dashboard' });
 
-    // Proteksi double-back sebelum keluar aplikasi
     if (!exitAppPending) {
       exitAppPending = true;
       showExitToast();
       
-      // Kunci kembali state di dashboard
       history.pushState({ page: 'dashboard' }, 'Dashboard', '');
 
       clearTimeout(exitTimeout);
@@ -306,7 +284,7 @@ function renderTableScreen(dataList) {
 }
 
 /**
- * 10. RENDER TABEL CETAK PDF LANDSCAPE (LENGKAP)
+ * 10. RENDER TABEL CETAK PDF LANDSCAPE
  */
 function renderTablePrint(dataList) {
   const tbodyPrint = document.getElementById('tbody-print-siswa');
@@ -336,16 +314,19 @@ function renderTablePrint(dataList) {
 function filterDataSiswa() {
   const filterElement = document.getElementById('filter-kelas');
   const selectedClass = filterElement ? filterElement.value : 'ALL';
-  const btnCetakText = document.getElementById('btn-cetak-text');
+  const btnPdfText = document.getElementById('btn-pdf-text');
+  const btnExcelText = document.getElementById('btn-excel-text');
   const printFilterInfo = document.getElementById('print-filter-info');
 
   let filtered = DATA_SISWA;
   if (selectedClass !== 'ALL') {
     filtered = DATA_SISWA.filter(s => s.kelas === selectedClass);
-    if (btnCetakText) btnCetakText.innerText = `Cetak PDF Landscape (Kelas ${selectedClass})`;
+    if (btnPdfText) btnPdfText.innerText = `Download PDF (${selectedClass})`;
+    if (btnExcelText) btnExcelText.innerText = `Excel (${selectedClass})`;
     if (printFilterInfo) printFilterInfo.innerText = `Filter: Kelas ${selectedClass}`;
   } else {
-    if (btnCetakText) btnCetakText.innerText = `Cetak PDF Landscape (Semua Siswa)`;
+    if (btnPdfText) btnPdfText.innerText = `Download PDF (Semua)`;
+    if (btnExcelText) btnExcelText.innerText = `Download Excel`;
     if (printFilterInfo) printFilterInfo.innerText = `Filter: Semua Siswa`;
   }
 
@@ -354,7 +335,50 @@ function filterDataSiswa() {
 }
 
 /**
- * 12. FUNGSI CETAK DOKUMEN KE PDF LANDSCAPE
+ * 12. FUNGSI DOWNLOAD EXCEL (.XLSX) SESUAI FILTER KELAS AKTIF
+ */
+function downloadExcel() {
+  const filterElement = document.getElementById('filter-kelas');
+  const selectedClass = filterElement ? filterElement.value : 'ALL';
+
+  let dataToExport = DATA_SISWA;
+  let fileName = "Dapodik_Muhfikra_Semua_Siswa.xlsx";
+
+  if (selectedClass !== 'ALL') {
+    dataToExport = DATA_SISWA.filter(s => s.kelas === selectedClass);
+    fileName = `Dapodik_Muhfikra_Kelas_${selectedClass}.xlsx`;
+  }
+
+  if (dataToExport.length === 0) {
+    alert("Tidak ada data siswa untuk di-export ke Excel.");
+    return;
+  }
+
+  // Format array data untuk sheet Excel
+  const excelData = dataToExport.map((siswa, idx) => ({
+    "No": idx + 1,
+    "NIS / NIPD": siswa.nis || "",
+    "NISN": siswa.nisn || "",
+    "Nama Lengkap": siswa.nama || "",
+    "Kelas": siswa.kelas || "",
+    "Tempat, Tanggal Lahir": siswa.ttl || "",
+    "Nama Ibu Kandung": siswa.ibu || "",
+    "Alamat Lengkap": siswa.alamat || ""
+  }));
+
+  // Buat worksheet dan workbook via SheetJS
+  const ws = XLSX.utils.json_to_sheet(excelData);
+  const wb = XLSX.utils.book_new();
+  const sheetTitle = selectedClass === 'ALL' ? 'DATA_SISWA' : selectedClass;
+  
+  XLSX.utils.book_append_sheet(wb, ws, sheetTitle);
+
+  // Trigger file download
+  XLSX.writeFile(wb, fileName);
+}
+
+/**
+ * 13. FUNGSI DOWNLOAD / CETAK PDF LANDSCAPE
  */
 function cetakPDF() {
   const now = new Date();
@@ -368,7 +392,7 @@ function cetakPDF() {
 }
 
 /**
- * 13. PLACEHOLDER UNTUK MENU TAHAP SELANJUTNYA
+ * 14. PLACEHOLDER UNTUK MENU TAHAP SELANJUTNYA
  */
 function showUnderDevelopment(menuName) {
   alert(`Menu [${menuName}] akan dikembangkan pada tahap selanjutnya.`);
