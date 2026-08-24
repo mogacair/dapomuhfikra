@@ -195,10 +195,13 @@
         <button onclick="goBack()" class="px-4 py-2 bg-[#374151] active:bg-black text-white font-bold rounded-xl text-base flex items-center gap-2">
           ← Kembali
         </button>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-[#374151]">Rapot & Penilaian</h2>
+        <div class="text-right">
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-[#374151]">Rapot & Penilaian</h2>
+          <span id="labelSemesterAktif" class="text-xs sm:text-sm font-bold text-[#15803d]">Semester Ganjil (Otomatis)</span>
+        </div>
       </div>
 
-      <!-- Langkah 1: Pilih Identitas Guru -->
+      <!-- Langkah 1: Identitas Guru -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-200 space-y-3">
         <label for="selectGuruPenilai" class="block font-bold text-gray-700 text-base">1. Pilih Identitas Pendidik:</label>
         <select id="selectGuruPenilai" onchange="onGuruSelected()" class="w-full p-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl text-lg font-semibold focus:outline-none focus:border-[#374151]">
@@ -206,7 +209,7 @@
         </select>
       </div>
 
-      <!-- Langkah 2: Pilih Mapel & Kelas -->
+      <!-- Langkah 2: Mapel & Kelas -->
       <div id="panelKbmNilai" class="hidden bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -229,65 +232,80 @@
         </div>
       </div>
 
-      <!-- Langkah 3: Form Penilaian & Capaian Pembelajaran -->
+      <!-- Langkah 3: Form Penilaian -->
       <div id="panelFormNilai" class="hidden space-y-5">
         
-        <!-- Form Capaian Pembelajaran (CP) -->
+        <!-- Form CP (Capaian Pembelajaran) -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border-t-4 border-[#ca8a04] space-y-3">
           <div class="flex items-center justify-between">
             <label for="inputCP" class="font-extrabold text-[#374151] text-base sm:text-lg">
               Capaian Pembelajaran (CP) / Tujuan Pembelajaran:
             </label>
-            <span class="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200">Wajib Diisi</span>
+            <span id="badgeStatusCP" class="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200">Wajib Klik Simpan</span>
           </div>
           <textarea 
             id="inputCP" 
             rows="2" 
             placeholder="Tuliskan capaian pembelajaran di sini..."
-            oninput="updateCPStatusLock()"
+            oninput="onCPInputChanged()"
             class="w-full p-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:border-[#ca8a04]"
           ></textarea>
           
           <div class="flex justify-end">
-            <button onclick="simpanCPManual()" class="px-4 py-2 bg-[#ca8a04] text-white font-bold rounded-xl text-sm shadow hover:bg-yellow-700 active:scale-95">
+            <button onclick="simpanCPManual()" class="px-5 py-2.5 bg-[#ca8a04] text-white font-bold rounded-xl text-base shadow hover:bg-yellow-700 active:scale-95 flex items-center gap-1.5">
               💾 Simpan & Kunci CP
             </button>
           </div>
 
-          <!-- Alert Jika CP Belum Diisi -->
           <div id="alertLockCP" class="p-3 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 text-sm font-semibold rounded-r-lg">
-            ⚠️ Kolom input nilai terkunci. Harap isi dan simpan Capaian Pembelajaran (CP) di atas terlebih dahulu.
+            ⚠️ Kolom input nilai terkunci. Anda wajib klik tombol <b>"Simpan & Kunci CP"</b> di atas sebelum dapat mengisi nilai.
           </div>
         </div>
 
-        <!-- Pilihan Tab Asesmen & Tombol Unduh/Cetak -->
+        <!-- Tab Asesmen & Unduh Excel -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <button id="btnTab_pts_ganjil" onclick="setKategoriAsesmen('pts_ganjil')" class="py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base bg-[#15803d] text-white shadow">
-              PTS Ganjil
+          
+          <!-- Kategori Tabs -->
+          <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            <button id="btnTab_uh1" onclick="setKategoriAsesmen('uh1')" class="py-2 px-2.5 rounded-xl font-bold text-xs sm:text-sm bg-[#15803d] text-white shadow">
+              UH 1
             </button>
-            <button id="btnTab_sas_ganjil" onclick="setKategoriAsesmen('sas_ganjil')" class="py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base bg-gray-100 text-gray-700 hover:bg-gray-200">
-              SAS Ganjil
+            <button id="btnTab_uh2" onclick="setKategoriAsesmen('uh2')" class="py-2 px-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">
+              UH 2
             </button>
-            <button id="btnTab_pts_genap" onclick="setKategoriAsesmen('pts_genap')" class="py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base bg-gray-100 text-gray-700 hover:bg-gray-200">
-              PTS Genap
+            <button id="btnTab_praktek1" onclick="setKategoriAsesmen('praktek1')" class="py-2 px-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Praktek 1
             </button>
-            <button id="btnTab_sas_genap" onclick="setKategoriAsesmen('sas_genap')" class="py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base bg-gray-100 text-gray-700 hover:bg-gray-200">
-              SAS Genap
+            <button id="btnTab_praktek2" onclick="setKategoriAsesmen('praktek2')" class="py-2 px-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Praktek 2
+            </button>
+            <button id="btnTab_pts" onclick="setKategoriAsesmen('pts')" class="py-2 px-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">
+              PTS
+            </button>
+            <button id="btnTab_sas" onclick="setKategoriAsesmen('sas')" class="py-2 px-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 text-gray-700 hover:bg-gray-200">
+              SAS
             </button>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 pt-2">
-            <button onclick="exportExcelNilai()" class="py-3 bg-[#15803d] hover:bg-[#166534] active:scale-98 text-white font-bold rounded-xl shadow text-sm sm:text-base flex justify-center items-center gap-2">
-              <span>📄</span> Unduh Excel
+          <!-- Opsi Isi Cepat Nilai Praktek (+5 dari UH) -->
+          <div id="panelOpsiPraktek" class="hidden p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div class="text-xs sm:text-sm text-blue-900 font-medium">
+              ⚡ Opsi Cepat: Isi otomatis <b id="lblTargetPraktek">Praktek 1 (+5 dari UH 1)</b> untuk seluruh siswa.
+            </div>
+            <button onclick="autoFillPraktekCepat()" class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs sm:text-sm shadow active:scale-95">
+              +5 Nilai Praktek
             </button>
-            <button onclick="cetakPDFNilai()" class="py-3 bg-[#dc2626] hover:bg-red-700 active:scale-98 text-white font-bold rounded-xl shadow text-sm sm:text-base flex justify-center items-center gap-2">
-              <span>🖨️</span> Cetak Rekap Nilai
+          </div>
+
+          <!-- Tombol Tunggal: Hanya Unduh Excel -->
+          <div class="pt-1">
+            <button onclick="exportExcelNilai()" class="w-full py-3.5 bg-[#15803d] hover:bg-[#166534] active:scale-98 text-white font-bold rounded-xl shadow text-base flex justify-center items-center gap-2">
+              <span>📄</span> Unduh Excel Rekap Nilai
             </button>
           </div>
         </div>
 
-        <!-- Tabel Input Nilai -->
+        <!-- Tabel Nilai -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -296,8 +314,8 @@
                   <th class="p-3.5 text-center w-12">NO</th>
                   <th class="p-3.5 w-28 hidden sm:table-cell">NISN</th>
                   <th class="p-3.5">NAMA SISWA</th>
-                  <th class="p-3.5 text-center w-28">NILAI</th>
-                  <th class="p-3.5 text-center w-24">STATUS</th>
+                  <th class="p-3.5 text-center w-32">NILAI (10-100)</th>
+                  <th class="p-3.5 text-center w-28">STATUS</th>
                 </tr>
               </thead>
               <tbody id="nilaiTableBody" class="divide-y divide-gray-200 font-medium"></tbody>
@@ -305,7 +323,7 @@
           </div>
         </div>
 
-        <!-- Tombol Simpan Batch -->
+        <!-- Tombol Simpan Seluruh Nilai -->
         <div class="pt-2">
           <button id="btnSimpanNilai" onclick="simpanSemuaNilai()" class="w-full py-4 bg-[#15803d] hover:bg-[#166534] active:scale-98 text-white font-black rounded-2xl text-lg shadow-lg flex justify-center items-center gap-2">
             💾 SIMPAN SELURUH NILAI KE GOOGLE SHEET
