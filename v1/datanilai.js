@@ -5,14 +5,13 @@ const GAS_URL_MASTER = "https://script.google.com/macros/s/AKfycbz9_3YbxX5D-baoB
 let selectedGuru = null;
 let selectedMapelObj = null;
 let currentNilaiData = [];
-let isCPSaved = false; // Status apakah tombol simpan CP sudah ditekan
+let isCPSaved = false;
 let activeAsesmen = "uh1"; // uh1 | uh2 | praktek1 | praktek2 | pts | sas
 let currentSemester = "ganjil"; // ganjil | genap
 
 // 1. Inisialisasi Deteksi Waktu Server / Waktu Lokal Otomatis
 function initRapotView() {
   const currentMonth = new Date().getMonth(); // 0 = Jan, 6 = Jul, 11 = Des
-  // Bulan 6 - 11 (Juli - Desember) = Ganjil, Bulan 0 - 5 (Januari - Juni) = Genap
   currentSemester = (currentMonth >= 6 && currentMonth <= 11) ? "ganjil" : "genap";
   
   const labelSemester = document.getElementById('labelSemesterAktif');
@@ -124,7 +123,6 @@ async function muatDataPenilaian() {
   }
 
   document.getElementById('inputCP').value = currentCP;
-  // Jika CP sudah ada dari database, otomatis anggap sudah tersimpan
   isCPSaved = currentCP.trim().length > 0;
   updateCPStatusUI();
 
@@ -151,9 +149,8 @@ async function muatDataPenilaian() {
   renderTableNilai();
 }
 
-// 5. Validasi & Kunci CP (Syarat Wajib Klik Simpan)
+// 5. Validasi & Kunci CP
 function onCPInputChanged() {
-  // Setiap guru mengedit teks CP, status kunci kembali false sampai guru klik simpan
   isCPSaved = false;
   updateCPStatusUI();
 }
@@ -190,7 +187,7 @@ function updateCPStatusUI() {
 
 // 6. Ganti Tab Kategori Asesmen
 function setKategoriAsesmen(kategori) {
-  activeAsesmen = kategori; // uh1 | uh2 | praktek1 | praktek2 | pts | sas
+  activeAsesmen = kategori;
   
   const buttons = ['uh1', 'uh2', 'praktek1', 'praktek2', 'pts', 'sas'];
   buttons.forEach(b => {
@@ -204,11 +201,10 @@ function setKategoriAsesmen(kategori) {
     }
   });
 
-  // Tampilkan tombol isi cepat praktek jika sedang membuka tab Praktek 1 atau Praktek 2
   const panelOpsiPraktek = document.getElementById('panelOpsiPraktek');
   if (kategori === 'praktek1' || kategori === 'praktek2') {
     panelOpsiPraktek.classList.remove('hidden');
-    document.getElementById('lblTargetPraktek').innerText = kategori === 'praktek1' ? 'Praktek 1 (+5 dari UH 1)' : 'Praktek 2 (+5 dari UH 2)';
+    document.getElementById('lblTargetPraktek').innerText = kategori === 'praktek1' ? 'Praktek 1 (+5 dari UH 1, Maks. 98)' : 'Praktek 2 (+5 dari UH 2, Maks. 98)';
   } else {
     panelOpsiPraktek.classList.add('hidden');
   }
@@ -216,36 +212,37 @@ function setKategoriAsesmen(kategori) {
   renderTableNilai();
 }
 
-// 7. Opsi Cepat Nilai Praktek (+5 dari Nilai Teori / UH)
+// 7. Opsi Cepat Nilai Praktek (+5 dari Nilai Teori, Maksimal 98)
 function autoFillPraktekCepat() {
   if (!isCPSaved) {
     alert("❌ Harap simpan Capaian Pembelajaran (CP) terlebih dahulu!");
     return;
   }
 
-  const fieldKey = `${activeAsesmen}_${currentSemester}`; // praktek1_ganjil / praktek2_ganjil
+  const fieldKey = `${activeAsesmen}_${currentSemester}`;
   const refTeoriKey = activeAsesmen === 'praktek1' ? `uh1_${currentSemester}` : `uh2_${currentSemester}`;
 
   let filledCount = 0;
   currentNilaiData.forEach(s => {
     const teoriVal = parseFloat(s[refTeoriKey]);
-    if (!isNaN(teoriVal) && teoriVal >= 10 && teoriVal <= 100) {
-      let praktekVal = Math.min(100, Math.round(teoriVal + 5));
+    if (!isNaN(teoriVal) && teoriVal >= 10 && teoriVal <= 98) {
+      // Dibatasi maksimal 98 (tidak boleh 100)
+      let praktekVal = Math.min(98, Math.round(teoriVal + 5));
       s[fieldKey] = praktekVal;
       filledCount++;
     }
   });
 
   if (filledCount === 0) {
-    alert(`⚠️ Nilai teori (${activeAsesmen === 'praktek1' ? 'UH 1' : 'UH 2'}) masih kosong. Silakan isi nilai teori terlebih dahulu!`);
+    alert(`⚠️ Nilai teori (${activeAsesmen === 'praktek1' ? 'UH 1' : 'UH 2'}) masih kosong atau tidak valid (10-98). Silakan isi nilai teori terlebih dahulu!`);
     return;
   }
 
   renderTableNilai();
-  alert(`✅ Berhasil mengisi otomatis ${filledCount} nilai praktek (+5 dari nilai teori)!`);
+  alert(`✅ Berhasil mengisi otomatis ${filledCount} nilai praktek (+5 dari nilai teori, maksimal 98)!`);
 }
 
-// 8. Render Tabel Input Nilai dengan Validasi Range 10-100 & Blokir Simbol
+// 8. Render Tabel Input Nilai (Validasi Range 10 - 98)
 function renderTableNilai() {
   const tbody = document.getElementById('nilaiTableBody');
   const fieldKey = `${activeAsesmen}_${currentSemester}`;
@@ -261,14 +258,14 @@ function renderTableNilai() {
     const valNilai = s[fieldKey] !== undefined ? s[fieldKey] : '';
     const num = parseFloat(valNilai);
     
-    // Status Validasi Range 10 - 100
+    // Status Validasi: Rentang 10 - 98
     let isInvalid = false;
     let statusBadge = `<span class="text-xs text-gray-400 font-medium">Kosong</span>`;
     
     if (valNilai !== '' && valNilai !== null) {
-      if (isNaN(num) || num < 10 || num > 100) {
+      if (isNaN(num) || num < 10 || num > 98) {
         isInvalid = true;
-        statusBadge = `<span class="px-2 py-0.5 rounded text-xs font-extrabold bg-red-600 text-white animate-pulse">Wajib 10-100</span>`;
+        statusBadge = `<span class="px-2 py-0.5 rounded text-xs font-extrabold bg-red-600 text-white animate-pulse">Wajib 10-98</span>`;
       } else if (num >= 75) {
         statusBadge = `<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">Tuntas</span>`;
       } else {
@@ -283,20 +280,20 @@ function renderTableNilai() {
     const row = document.createElement('tr');
     row.className = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
     row.innerHTML = `
-      <td class="p-3 text-center font-bold text-gray-500">${indexSiswa(idx + 1)}</td>
+      <td class="p-3 text-center font-bold text-gray-500">${idx + 1}</td>
       <td class="p-3 font-mono text-gray-700 text-sm hidden sm:table-cell">${s.nisn}</td>
       <td class="p-3 font-bold text-gray-800 text-sm sm:text-base">${s.nama}</td>
       <td class="p-2 text-center w-28">
         <input 
           type="number" 
           min="10" 
-          max="100" 
+          max="98" 
           step="1"
           value="${valNilai}" 
           ${!isCPSaved ? 'disabled' : ''} 
           onkeydown="filterHanyaAngka(event)"
           oninput="onInputNilaiChange('${s.nisn}', this.value, this)"
-          placeholder="10-100"
+          placeholder="10-98"
           class="w-24 p-2 text-center font-bold text-base border-2 rounded-lg focus:outline-none ${inputBgBorder}"
         />
       </td>
@@ -306,18 +303,14 @@ function renderTableNilai() {
   });
 }
 
-function indexSiswa(num) {
-  return num;
-}
-
-// 9. Cegah Simbol Khas Keyboard (+, -, e, E, titik, koma)
+// 9. Cegah Simbol Keyboard
 function filterHanyaAngka(e) {
   if (["e", "E", "+", "-", ".", ","].includes(e.key)) {
     e.preventDefault();
   }
 }
 
-// 10. Handler Nilai Berubah + Validasi Real-time
+// 10. Handler Real-time Input Nilai
 function onInputNilaiChange(nisn, rawVal, inputElem) {
   const cleanVal = rawVal.replace(/[^0-9]/g, '');
   const fieldKey = `${activeAsesmen}_${currentSemester}`;
@@ -327,16 +320,15 @@ function onInputNilaiChange(nisn, rawVal, inputElem) {
     siswa[fieldKey] = cleanVal !== '' ? parseInt(cleanVal, 10) : '';
   }
 
-  // Validasi visual langsung tanpa re-render seluruh tabel agar fokus keyboard tidak lepas
   const num = parseInt(cleanVal, 10);
-  if (cleanVal !== '' && (isNaN(num) || num < 10 || num > 100)) {
+  if (cleanVal !== '' && (isNaN(num) || num < 10 || num > 98)) {
     inputElem.className = "w-24 p-2 text-center font-bold text-base border-2 rounded-lg focus:outline-none bg-red-50 border-red-500 text-red-600 ring-2 ring-red-400";
   } else {
     inputElem.className = "w-24 p-2 text-center font-bold text-base border-2 rounded-lg focus:outline-none bg-white border-gray-300 focus:border-[#15803d]";
   }
 }
 
-// 11. Simpan Seluruh Nilai ke Google Sheets Guru
+// 11. Simpan Seluruh Nilai ke Google Sheets Guru (Maksimal 98)
 async function simpanSemuaNilai() {
   if (!isCPSaved) {
     alert("❌ Gagal: Anda belum menyimpan dan mengunci Capaian Pembelajaran (CP)!");
@@ -345,7 +337,7 @@ async function simpanSemuaNilai() {
 
   const cpVal = document.getElementById('inputCP').value.trim();
 
-  // Validasi: pastikan tidak ada nilai di luar rentang 10 - 100
+  // Validasi: pastikan tidak ada nilai di luar rentang 10 - 98
   let adaNilaiInvalid = false;
   const listKategori = ['uh1', 'uh2', 'praktek1', 'praktek2', 'pts', 'sas'];
   
@@ -354,7 +346,7 @@ async function simpanSemuaNilai() {
       const v = s[`${kat}_${currentSemester}`];
       if (v !== '' && v !== null && v !== undefined) {
         const num = parseFloat(v);
-        if (isNaN(num) || num < 10 || num > 100) {
+        if (isNaN(num) || num < 10 || num > 98) {
           adaNilaiInvalid = true;
           break;
         }
@@ -364,7 +356,7 @@ async function simpanSemuaNilai() {
   }
 
   if (adaNilaiInvalid) {
-    alert("❌ Gagal Menyimpan: Terdapat nilai yang di luar rentang (Wajib antara 10 sampai 100). Periksa kotak bertanda merah!");
+    alert("❌ Gagal Menyimpan: Terdapat nilai di luar rentang (Wajib antara 10 sampai 98, tidak boleh 100). Periksa kotak bertanda merah!");
     renderTableNilai();
     return;
   }
@@ -411,7 +403,7 @@ async function simpanSemuaNilai() {
   }
 }
 
-// 12. Unduh Excel Nilai (Struktur Komprehensif Sesuai Semester Aktif)
+// 12. Unduh Excel Nilai
 function exportExcelNilai() {
   if (currentNilaiData.length === 0) {
     alert("Data nilai masih kosong.");
