@@ -1,24 +1,33 @@
-// GANTI DENGAN URL GAS MASTER PENILAIAN ANDA
+// GANTI DENGAN URL GAS MASTER ANDA
 const GAS_URL_MASTER = "https://script.google.com/macros/s/AKfycbz9_3YbxX5D-baoBMHoz1MykxZKxIMq1tZReLuek_gi97jVVwkbJ1WqEvnBTvAt89OV/exec";
 
 // State Penilaian
 let selectedGuru = null;
 let selectedMapelObj = null;
-let currentNilaiData = []; // [{ nisn, nama, pts_ganjil, sas_ganjil, pts_genap, sas_genap }]
-let currentCP = "";
-let activeAsesmen = "pts_ganjil"; // pts_ganjil | sas_ganjil | pts_genap | sas_genap
+let currentNilaiData = [];
+let isCPSaved = false; // Status apakah tombol simpan CP sudah ditekan
+let activeAsesmen = "uh1"; // uh1 | uh2 | praktek1 | praktek2 | pts | sas
+let currentSemester = "ganjil"; // ganjil | genap
 
-// Inisialisasi Tampilan Rapot / Penilaian
-async function initRapotView() {
-  await loadGuruOptions();
+// 1. Inisialisasi Deteksi Waktu Server / Waktu Lokal Otomatis
+function initRapotView() {
+  const currentMonth = new Date().getMonth(); // 0 = Jan, 6 = Jul, 11 = Des
+  // Bulan 6 - 11 (Juli - Desember) = Ganjil, Bulan 0 - 5 (Januari - Juni) = Genap
+  currentSemester = (currentMonth >= 6 && currentMonth <= 11) ? "ganjil" : "genap";
+  
+  const labelSemester = document.getElementById('labelSemesterAktif');
+  if (labelSemester) {
+    labelSemester.innerText = `Semester ${currentSemester.toUpperCase()} (Otomatis)`;
+  }
+
+  loadGuruOptions();
 }
 
-// 1. Ambil & Tampilkan Daftar Guru di Dropdown
+// 2. Muat Daftar Guru
 async function loadGuruOptions() {
   const selectGuru = document.getElementById('selectGuruPenilai');
   if (!selectGuru) return;
 
-  // Jika guruData di dataguru.js belum terisi, ambil via GAS
   if (!guruData || guruData.length === 0) {
     selectGuru.innerHTML = '<option value="">⏳ Memuat data guru...</option>';
     try {
@@ -40,7 +49,7 @@ async function loadGuruOptions() {
   });
 }
 
-// 2. Saat Guru Dipilih -> Tampilkan Mapel yang Diampu
+// 3. Saat Guru Dipilih
 function onGuruSelected() {
   const idGuru = document.getElementById('selectGuruPenilai').value;
   const selectMapel = document.getElementById('selectMapelGuru');
@@ -58,7 +67,6 @@ function onGuruSelected() {
   selectedGuru = guruData.find(g => String(g.idGuru) === String(idGuru));
   if (!selectedGuru) return;
 
-  // Cek apakah guru sudah punya ID Spreadsheet di kolom H
   if (!selectedGuru.id_spreadsheet) {
     alert(`Peringatan: ID Spreadsheet untuk ${selectedGuru.nama} belum diisi pada database master data (Kolom H)!`);
   }
@@ -71,7 +79,7 @@ function onGuruSelected() {
   panelKbm.classList.remove('hidden');
 }
 
-// 3. Saat Mapel atau Kelas Dipilih -> Muat Data Siswa & Nilai dari GAS
+// 4. Muat Data Siswa & Nilai dari Spreadsheet Guru
 async function muatDataPenilaian() {
   const selectMapel = document.getElementById('selectMapelGuru');
   const selectKelas = document.getElementById('selectKelasNilai');
@@ -90,19 +98,16 @@ async function muatDataPenilaian() {
   panelFormNilai.classList.remove('hidden');
   tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-500 font-medium animate-pulse">Sedang sinkronisasi data siswa & nilai...</td></tr>`;
 
-  // Pastikan database siswa sudah dimuat
   if (!siswaData || siswaData.length === 0) {
     if (typeof fetchDataSiswa === 'function') {
       await fetchDataSiswa();
     }
   }
 
-  // Filter siswa sesuai kelas yang dipilih
   const filteredSiswa = siswaData.filter(s => s.kelas.toUpperCase() === kelas.toUpperCase());
 
-  // Ambil nilai dan CP dari spreadsheet guru yang bersangkutan
   let nilaiFromSheet = [];
-  currentCP = "";
+  let currentCP = "";
 
   if (selectedGuru.id_spreadsheet) {
     try {
@@ -114,22 +119,30 @@ async function muatDataPenilaian() {
         currentCP = json.cp || (selectedMapelObj ? selectedMapelObj.capaian : '') || '';
       }
     } catch (e) {
-      console.warn("Gagal mengambil nilai tersimpan, menggunakan input baru:", e);
+      console.warn("Gagal mengambil nilai tersimpan:", e);
     }
   }
 
-  // Set input CP
   document.getElementById('inputCP').value = currentCP;
-  updateCPStatusLock();
+  // Jika CP sudah ada dari database, otomatis anggap sudah tersimpan
+  isCPSaved = currentCP.trim().length > 0;
+  updateCPStatusUI();
 
-  // Gabungkan daftar siswa kelas tersebut dengan nilai yang ada di sheet
   currentNilaiData = filteredSiswa.map(s => {
     const existing = nilaiFromSheet.find(n => String(n.nisn) === String(s.nisn));
     return {
       nisn: s.nisn,
       nama: s.nama,
+      uh1_ganjil: existing ? existing.uh1_ganjil : '',
+      uh2_ganjil: existing ? existing.uh2_ganjil : '',
+      praktek1_ganjil: existing ? existing.praktek1_ganjil : '',
+      praktek2_ganjil: existing ? existing.praktek2_ganjil : '',
       pts_ganjil: existing ? existing.pts_ganjil : '',
       sas_ganjil: existing ? existing.sas_ganjil : '',
+      uh1_genap: existing ? existing.uh1_genap : '',
+      uh2_genap: existing ? existing.uh2_genap : '',
+      praktek1_genap: existing ? existing.praktek1_genap : '',
+      praktek2_genap: existing ? existing.praktek2_genap : '',
       pts_genap: existing ? existing.pts_genap : '',
       sas_genap: existing ? existing.sas_genap : ''
     };
@@ -138,58 +151,104 @@ async function muatDataPenilaian() {
   renderTableNilai();
 }
 
-// 4. Update Status Kunci CP (Validasi Wajib Isi CP Terlebih Dahulu)
-function updateCPStatusLock() {
-  const cpVal = document.getElementById('inputCP').value.trim();
-  const alertLock = document.getElementById('alertLockCP');
-  const isLocked = cpVal.length === 0;
-
-  if (isLocked) {
-    alertLock.classList.remove('hidden');
-  } else {
-    alertLock.classList.add('hidden');
-  }
-
-  // Render ulang tabel untuk enable/disable input nilai
-  renderTableNilai();
+// 5. Validasi & Kunci CP (Syarat Wajib Klik Simpan)
+function onCPInputChanged() {
+  // Setiap guru mengedit teks CP, status kunci kembali false sampai guru klik simpan
+  isCPSaved = false;
+  updateCPStatusUI();
 }
 
 function simpanCPManual() {
   const cpVal = document.getElementById('inputCP').value.trim();
   if (!cpVal) {
-    alert("Capaian Pembelajaran (CP) tidak boleh kosong!");
+    alert("❌ Capaian Pembelajaran (CP) tidak boleh kosong!");
+    isCPSaved = false;
+    updateCPStatusUI();
     return;
   }
-  currentCP = cpVal;
-  updateCPStatusLock();
-  alert("Capaian Pembelajaran berhasil ditetapkan! Kolom input nilai kini aktif.");
+  isCPSaved = true;
+  updateCPStatusUI();
+  alert("✅ Capaian Pembelajaran berhasil disimpan & dikunci! Kolom input nilai kini terbuka.");
 }
 
-// 5. Ganti Tab Kategori Asesmen (PTS Ganjil / SAS Ganjil / PTS Genap / SAS Genap)
-function setKategoriAsesmen(kategori) {
-  activeAsesmen = kategori;
-  
-  // Highlight tab tombol
-  const buttons = ['pts_ganjil', 'sas_ganjil', 'pts_genap', 'sas_genap'];
-  buttons.forEach(b => {
-    const el = document.getElementById(`btnTab_${b}`);
-    if (el) {
-      if (b === kategori) {
-        el.className = "py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base bg-[#15803d] text-white shadow";
-      } else {
-        el.className = "py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base bg-gray-100 text-gray-700 hover:bg-gray-200";
-      }
-    }
-  });
+function updateCPStatusUI() {
+  const alertLock = document.getElementById('alertLockCP');
+  const badgeCP = document.getElementById('badgeStatusCP');
+
+  if (isCPSaved) {
+    alertLock.classList.add('hidden');
+    badgeCP.innerText = "Tersimpan & Terkunci";
+    badgeCP.className = "text-xs font-bold text-green-700 bg-green-100 px-2.5 py-1 rounded-full border border-green-300";
+  } else {
+    alertLock.classList.remove('hidden');
+    badgeCP.innerText = "Wajib Klik Simpan";
+    badgeCP.className = "text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200";
+  }
 
   renderTableNilai();
 }
 
-// 6. Render Baris Input Nilai Siswa
+// 6. Ganti Tab Kategori Asesmen
+function setKategoriAsesmen(kategori) {
+  activeAsesmen = kategori; // uh1 | uh2 | praktek1 | praktek2 | pts | sas
+  
+  const buttons = ['uh1', 'uh2', 'praktek1', 'praktek2', 'pts', 'sas'];
+  buttons.forEach(b => {
+    const el = document.getElementById(`btnTab_${b}`);
+    if (el) {
+      if (b === kategori) {
+        el.className = "py-2 px-2.5 rounded-xl font-bold text-xs sm:text-sm bg-[#15803d] text-white shadow";
+      } else {
+        el.className = "py-2 px-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 text-gray-700 hover:bg-gray-200";
+      }
+    }
+  });
+
+  // Tampilkan tombol isi cepat praktek jika sedang membuka tab Praktek 1 atau Praktek 2
+  const panelOpsiPraktek = document.getElementById('panelOpsiPraktek');
+  if (kategori === 'praktek1' || kategori === 'praktek2') {
+    panelOpsiPraktek.classList.remove('hidden');
+    document.getElementById('lblTargetPraktek').innerText = kategori === 'praktek1' ? 'Praktek 1 (+5 dari UH 1)' : 'Praktek 2 (+5 dari UH 2)';
+  } else {
+    panelOpsiPraktek.classList.add('hidden');
+  }
+
+  renderTableNilai();
+}
+
+// 7. Opsi Cepat Nilai Praktek (+5 dari Nilai Teori / UH)
+function autoFillPraktekCepat() {
+  if (!isCPSaved) {
+    alert("❌ Harap simpan Capaian Pembelajaran (CP) terlebih dahulu!");
+    return;
+  }
+
+  const fieldKey = `${activeAsesmen}_${currentSemester}`; // praktek1_ganjil / praktek2_ganjil
+  const refTeoriKey = activeAsesmen === 'praktek1' ? `uh1_${currentSemester}` : `uh2_${currentSemester}`;
+
+  let filledCount = 0;
+  currentNilaiData.forEach(s => {
+    const teoriVal = parseFloat(s[refTeoriKey]);
+    if (!isNaN(teoriVal) && teoriVal >= 10 && teoriVal <= 100) {
+      let praktekVal = Math.min(100, Math.round(teoriVal + 5));
+      s[fieldKey] = praktekVal;
+      filledCount++;
+    }
+  });
+
+  if (filledCount === 0) {
+    alert(`⚠️ Nilai teori (${activeAsesmen === 'praktek1' ? 'UH 1' : 'UH 2'}) masih kosong. Silakan isi nilai teori terlebih dahulu!`);
+    return;
+  }
+
+  renderTableNilai();
+  alert(`✅ Berhasil mengisi otomatis ${filledCount} nilai praktek (+5 dari nilai teori)!`);
+}
+
+// 8. Render Tabel Input Nilai dengan Validasi Range 10-100 & Blokir Simbol
 function renderTableNilai() {
   const tbody = document.getElementById('nilaiTableBody');
-  const cpVal = document.getElementById('inputCP').value.trim();
-  const isCPFilled = cpVal.length > 0;
+  const fieldKey = `${activeAsesmen}_${currentSemester}`;
 
   tbody.innerHTML = '';
 
@@ -199,34 +258,46 @@ function renderTableNilai() {
   }
 
   currentNilaiData.forEach((s, idx) => {
-    const valNilai = s[activeAsesmen] || '';
+    const valNilai = s[fieldKey] !== undefined ? s[fieldKey] : '';
     const num = parseFloat(valNilai);
-    let statusBadge = `<span class="text-xs text-gray-400 font-medium">Belum Diisi</span>`;
     
-    if (!isNaN(num)) {
-      if (num >= 75) {
+    // Status Validasi Range 10 - 100
+    let isInvalid = false;
+    let statusBadge = `<span class="text-xs text-gray-400 font-medium">Kosong</span>`;
+    
+    if (valNilai !== '' && valNilai !== null) {
+      if (isNaN(num) || num < 10 || num > 100) {
+        isInvalid = true;
+        statusBadge = `<span class="px-2 py-0.5 rounded text-xs font-extrabold bg-red-600 text-white animate-pulse">Wajib 10-100</span>`;
+      } else if (num >= 75) {
         statusBadge = `<span class="px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">Tuntas</span>`;
       } else {
-        statusBadge = `<span class="px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">Remidi</span>`;
+        statusBadge = `<span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-800">Remidi</span>`;
       }
     }
+
+    const inputBgBorder = isInvalid 
+      ? 'bg-red-50 border-red-500 text-red-600 ring-2 ring-red-400' 
+      : (!isCPSaved ? 'bg-gray-200 cursor-not-allowed border-gray-300' : 'bg-white border-gray-300 focus:border-[#15803d]');
 
     const row = document.createElement('tr');
     row.className = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
     row.innerHTML = `
-      <td class="p-3 text-center font-bold text-gray-500">${idx + 1}</td>
+      <td class="p-3 text-center font-bold text-gray-500">${indexSiswa(idx + 1)}</td>
       <td class="p-3 font-mono text-gray-700 text-sm hidden sm:table-cell">${s.nisn}</td>
       <td class="p-3 font-bold text-gray-800 text-sm sm:text-base">${s.nama}</td>
       <td class="p-2 text-center w-28">
         <input 
           type="number" 
-          min="0" 
+          min="10" 
           max="100" 
+          step="1"
           value="${valNilai}" 
-          ${!isCPFilled ? 'disabled' : ''} 
-          onchange="onInputNilaiChange('${s.nisn}', this.value)"
-          placeholder="0-100"
-          class="w-20 p-2 text-center font-bold text-base border-2 rounded-lg focus:outline-none focus:border-[#15803d] ${!isCPFilled ? 'bg-gray-200 cursor-not-allowed border-gray-300' : 'bg-white border-gray-300'}"
+          ${!isCPSaved ? 'disabled' : ''} 
+          onkeydown="filterHanyaAngka(event)"
+          oninput="onInputNilaiChange('${s.nisn}', this.value, this)"
+          placeholder="10-100"
+          class="w-24 p-2 text-center font-bold text-base border-2 rounded-lg focus:outline-none ${inputBgBorder}"
         />
       </td>
       <td class="p-3 text-center">${statusBadge}</td>
@@ -235,24 +306,71 @@ function renderTableNilai() {
   });
 }
 
-// 7. Simpan Nilai ke State Lokal saat diisi
-function onInputNilaiChange(nisn, val) {
-  const siswa = currentNilaiData.find(s => String(s.nisn) === String(nisn));
-  if (siswa) {
-    siswa[activeAsesmen] = val;
+function indexSiswa(num) {
+  return num;
+}
+
+// 9. Cegah Simbol Khas Keyboard (+, -, e, E, titik, koma)
+function filterHanyaAngka(e) {
+  if (["e", "E", "+", "-", ".", ","].includes(e.key)) {
+    e.preventDefault();
   }
 }
 
-// 8. Simpan Semua Nilai ke Google Sheets Guru (Batch Request)
+// 10. Handler Nilai Berubah + Validasi Real-time
+function onInputNilaiChange(nisn, rawVal, inputElem) {
+  const cleanVal = rawVal.replace(/[^0-9]/g, '');
+  const fieldKey = `${activeAsesmen}_${currentSemester}`;
+  const siswa = currentNilaiData.find(s => String(s.nisn) === String(nisn));
+
+  if (siswa) {
+    siswa[fieldKey] = cleanVal !== '' ? parseInt(cleanVal, 10) : '';
+  }
+
+  // Validasi visual langsung tanpa re-render seluruh tabel agar fokus keyboard tidak lepas
+  const num = parseInt(cleanVal, 10);
+  if (cleanVal !== '' && (isNaN(num) || num < 10 || num > 100)) {
+    inputElem.className = "w-24 p-2 text-center font-bold text-base border-2 rounded-lg focus:outline-none bg-red-50 border-red-500 text-red-600 ring-2 ring-red-400";
+  } else {
+    inputElem.className = "w-24 p-2 text-center font-bold text-base border-2 rounded-lg focus:outline-none bg-white border-gray-300 focus:border-[#15803d]";
+  }
+}
+
+// 11. Simpan Seluruh Nilai ke Google Sheets Guru
 async function simpanSemuaNilai() {
+  if (!isCPSaved) {
+    alert("❌ Gagal: Anda belum menyimpan dan mengunci Capaian Pembelajaran (CP)!");
+    return;
+  }
+
   const cpVal = document.getElementById('inputCP').value.trim();
-  if (!cpVal) {
-    alert("Harap isi Capaian Pembelajaran (CP) terlebih dahulu sebelum menyimpan!");
+
+  // Validasi: pastikan tidak ada nilai di luar rentang 10 - 100
+  let adaNilaiInvalid = false;
+  const listKategori = ['uh1', 'uh2', 'praktek1', 'praktek2', 'pts', 'sas'];
+  
+  for (const s of currentNilaiData) {
+    for (const kat of listKategori) {
+      const v = s[`${kat}_${currentSemester}`];
+      if (v !== '' && v !== null && v !== undefined) {
+        const num = parseFloat(v);
+        if (isNaN(num) || num < 10 || num > 100) {
+          adaNilaiInvalid = true;
+          break;
+        }
+      }
+    }
+    if (adaNilaiInvalid) break;
+  }
+
+  if (adaNilaiInvalid) {
+    alert("❌ Gagal Menyimpan: Terdapat nilai yang di luar rentang (Wajib antara 10 sampai 100). Periksa kotak bertanda merah!");
+    renderTableNilai();
     return;
   }
 
   if (!selectedGuru || !selectedGuru.id_spreadsheet) {
-    alert("Gagal: ID Spreadsheet guru tidak ditemukan!");
+    alert("❌ Gagal: ID Spreadsheet guru tidak ditemukan di database!");
     return;
   }
 
@@ -279,7 +397,7 @@ async function simpanSemuaNilai() {
     const result = await res.json();
 
     if (result.status === 'success') {
-      alert("✅ Berhasil: Seluruh nilai dan Capaian Pembelajaran tersimpan di Google Sheet pribadi guru!");
+      alert("✅ Berhasil: Seluruh nilai ulangan, praktek, PTS, SAS, dan CP tersimpan rapi di Google Sheet pribadi guru!");
       renderTableNilai();
     } else {
       throw new Error(result.message);
@@ -293,7 +411,7 @@ async function simpanSemuaNilai() {
   }
 }
 
-// 9. Export Excel Nilai
+// 12. Unduh Excel Nilai (Struktur Komprehensif Sesuai Semester Aktif)
 function exportExcelNilai() {
   if (currentNilaiData.length === 0) {
     alert("Data nilai masih kosong.");
@@ -302,15 +420,17 @@ function exportExcelNilai() {
 
   const kelas = document.getElementById('selectKelasNilai').value;
   const cpVal = document.getElementById('inputCP').value.trim();
+  const sem = currentSemester.toUpperCase();
 
   const worksheetData = [
-    ["REKAP NILAI & CAPAIAN PEMBELAJARAN"],
+    ["REKAPITULASI PENILAIAN SISWA"],
     ["SMK Muhammadiyah 5 Karanganyar"],
+    [`Tahun Pelajaran 2026/2027 - SEMESTER ${sem}`],
     [`Guru Pengampu : ${selectedGuru ? selectedGuru.nama : '-'}`],
     [`Mata Pelajaran: ${selectedMapelObj ? selectedMapelObj.namaMapel : '-'} | Kelas: ${kelas}`],
-    [`Capaian Pembelajaran: ${cpVal}`],
+    [`Capaian Pembelajaran: ${cpVal || '-'}`],
     [],
-    ["NO", "NISN", "NAMA SISWA", "PTS GANJIL", "SAS GANJIL", "PTS GENAP", "SAS GENAP"]
+    ["NO", "NISN", "NAMA SISWA", "UH 1", "UH 2", "PRAKTEK 1", "PRAKTEK 2", "PTS", "SAS"]
   ];
 
   currentNilaiData.forEach((s, idx) => {
@@ -318,87 +438,22 @@ function exportExcelNilai() {
       idx + 1,
       s.nisn,
       s.nama,
-      s.pts_ganjil || '',
-      s.sas_ganjil || '',
-      s.pts_genap || '',
-      s.sas_genap || ''
+      s[`uh1_${currentSemester}`] || '',
+      s[`uh2_${currentSemester}`] || '',
+      s[`praktek1_${currentSemester}`] || '',
+      s[`praktek2_${currentSemester}`] || '',
+      s[`pts_${currentSemester}`] || '',
+      s[`sas_${currentSemester}`] || ''
     ]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(worksheetData);
-  ws['!cols'] = [{ wch: 6 }, { wch: 15 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+  ws['!cols'] = [
+    { wch: 6 }, { wch: 15 }, { wch: 28 }, { wch: 10 },
+    { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }
+  ];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Nilai");
-  XLSX.writeFile(wb, `Nilai_${selectedMapelObj.namaMapel}_${kelas}.xlsx`);
-}
-
-// 10. Cetak PDF Rekap Nilai
-function cetakPDFNilai() {
-  if (currentNilaiData.length === 0) {
-    alert("Data nilai masih kosong.");
-    return;
-  }
-
-  const kelas = document.getElementById('selectKelasNilai').value;
-  const cpVal = document.getElementById('inputCP').value.trim();
-  const tanggalSekarang = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  let tableRows = '';
-  currentNilaiData.forEach((s, idx) => {
-    tableRows += `
-      <tr>
-        <td style="text-align: center;">${idx + 1}</td>
-        <td style="text-align: center; font-family: monospace;">${s.nisn}</td>
-        <td style="font-weight: bold;">${s.nama}</td>
-        <td style="text-align: center; font-weight: bold;">${s.pts_ganjil || '-'}</td>
-        <td style="text-align: center; font-weight: bold;">${s.sas_ganjil || '-'}</td>
-        <td style="text-align: center; font-weight: bold;">${s.pts_genap || '-'}</td>
-        <td style="text-align: center; font-weight: bold;">${s.sas_genap || '-'}</td>
-      </tr>
-    `;
-  });
-
-  const printContainer = document.getElementById('printableArea');
-  printContainer.innerHTML = `
-    <div class="print-header">
-      REKAPITULASI PENILAIAN SISWA<br>
-      SMK MUHAMMADIYAH 5 KARANGANYAR<br>
-      TAHUN PELAJARAN 2026/2027
-    </div>
-
-    <div style="font-size: 10pt; line-height: 1.5; margin-bottom: 12px;">
-      <div><b>Guru Pengampu:</b> ${selectedGuru.nama} &nbsp;|&nbsp; <b>Mata Pelajaran:</b> ${selectedMapelObj.namaMapel} &nbsp;|&nbsp; <b>Kelas:</b> ${kelas}</div>
-      <div style="margin-top: 3px;"><b>Capaian Pembelajaran:</b> ${cpVal || '-'}</div>
-    </div>
-
-    <table class="print-table">
-      <thead>
-        <tr>
-          <th style="width: 5%;">NO</th>
-          <th style="width: 15%;">NISN</th>
-          <th style="width: 32%;">NAMA SISWA</th>
-          <th style="width: 12%;">PTS GANJIL</th>
-          <th style="width: 12%;">SAS GANJIL</th>
-          <th style="width: 12%;">PTS GENAP</th>
-          <th style="width: 12%;">SAS GENAP</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tableRows}
-      </tbody>
-    </table>
-
-    <div class="print-ttd-wrap">
-      <div class="print-ttd">
-        <div>Karanganyar, ${tanggalSekarang}</div>
-        <div style="margin-top: 4px;">Guru Mata Pelajaran,</div>
-        <div style="height: 60px;"></div>
-        <div style="font-weight: bold; text-decoration: underline;">${selectedGuru.nama}</div>
-      </div>
-      <div style="clear: both;"></div>
-    </div>
-  `;
-
-  window.print();
+  XLSX.utils.book_append_sheet(wb, ws, `Nilai_${sem}`);
+  XLSX.writeFile(wb, `Nilai_${selectedMapelObj.namaMapel}_${kelas}_Sem_${sem}.xlsx`);
 }
