@@ -15,7 +15,6 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Konfigurasi Tema Tailwind CSS -->
   <script>
     tailwind.config = {
       theme: {
@@ -82,7 +81,7 @@
           <span class="text-4xl">🎓</span>
         </button>
 
-        <!-- Menu Rapot -->
+        <!-- Menu Rapot & Penilaian -->
         <button onclick="navigateTo('rapot')" class="p-6 bg-white border-l-8 border-[#374151] rounded-2xl shadow-sm hover:shadow-md active:bg-gray-100 transition-all text-left flex items-center justify-between">
           <div>
             <span class="text-2xl font-bold text-[#374151] block">Rapot</span>
@@ -102,7 +101,6 @@
         <h2 class="text-2xl sm:text-3xl font-extrabold text-[#15803d]">Data Siswa</h2>
       </div>
 
-      <!-- Filter & Aksi Siswa -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex items-center justify-between">
           <label for="filterKelasSiswa" class="block font-bold text-gray-700 text-base">Pilih Filter Kelas:</label>
@@ -131,7 +129,6 @@
         </div>
       </div>
 
-      <!-- Tabel Siswa -->
       <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
@@ -143,9 +140,7 @@
                 <th class="p-3.5 text-center w-28">KELAS</th>
               </tr>
             </thead>
-            <tbody id="siswaTableBody" class="divide-y divide-gray-200 text-base sm:text-lg font-medium">
-              <!-- Rendered by datasiswa.js -->
-            </tbody>
+            <tbody id="siswaTableBody" class="divide-y divide-gray-200 text-base sm:text-lg font-medium"></tbody>
           </table>
         </div>
       </div>
@@ -160,7 +155,6 @@
         <h2 class="text-2xl sm:text-3xl font-extrabold text-[#ca8a04]">Data Guru</h2>
       </div>
 
-      <!-- Aksi Guru (Unduh & Cetak) -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
         <div class="flex items-center justify-between">
           <span class="font-bold text-gray-700 text-base">Kelola & Unduh Dokumen:</span>
@@ -179,7 +173,6 @@
         </div>
       </div>
 
-      <!-- Tabel Guru (Tanpa ID Guru) -->
       <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
@@ -190,32 +183,149 @@
                 <th class="p-3.5 w-52 sm:w-64">MAPEL DIAMPU</th>
               </tr>
             </thead>
-            <tbody id="guruTableBody" class="divide-y divide-gray-200 text-base sm:text-lg font-medium">
-              <!-- Rendered by dataguru.js -->
-            </tbody>
+            <tbody id="guruTableBody" class="divide-y divide-gray-200 text-base sm:text-lg font-medium"></tbody>
           </table>
         </div>
       </div>
     </main>
 
-    <!-- VIEW PLACEHOLDER ALUMNI & RAPOT -->
+    <!-- ================= VIEW RAPOT & PENILAIAN ================= -->
+    <main id="view-rapot" class="hidden flex-1 space-y-5">
+      <div class="flex items-center justify-between pb-3 border-b-2 border-gray-200">
+        <button onclick="goBack()" class="px-4 py-2 bg-[#374151] active:bg-black text-white font-bold rounded-xl text-base flex items-center gap-2">
+          ← Kembali
+        </button>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-[#374151]">Rapot & Penilaian</h2>
+      </div>
+
+      <!-- Langkah 1: Pilih Identitas Guru -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-200 space-y-3">
+        <label for="selectGuruPenilai" class="block font-bold text-gray-700 text-base">1. Pilih Identitas Pendidik:</label>
+        <select id="selectGuruPenilai" onchange="onGuruSelected()" class="w-full p-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl text-lg font-semibold focus:outline-none focus:border-[#374151]">
+          <option value="">-- Pilih Nama Guru --</option>
+        </select>
+      </div>
+
+      <!-- Langkah 2: Pilih Mapel & Kelas -->
+      <div id="panelKbmNilai" class="hidden bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="selectMapelGuru" class="block font-bold text-gray-700 mb-1.5 text-base">2. Pilih Mata Pelajaran:</label>
+            <select id="selectMapelGuru" onchange="muatDataPenilaian()" class="w-full p-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-base font-semibold focus:outline-none focus:border-[#374151]">
+              <option value="">-- Pilih Mata Pelajaran --</option>
+            </select>
+          </div>
+          <div>
+            <label for="selectKelasNilai" class="block font-bold text-gray-700 mb-1.5 text-base">3. Pilih Kelas:</label>
+            <select id="selectKelasNilai" onchange="muatDataPenilaian()" class="w-full p-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-base font-semibold focus:outline-none focus:border-[#374151]">
+              <option value="X TKR">X TKR</option>
+              <option value="X TKJ">X TKJ</option>
+              <option value="XI TKR">XI TKR</option>
+              <option value="XI TKJ">XI TKJ</option>
+              <option value="XII TKR">XII TKR</option>
+              <option value="XII TKJ">XII TKJ</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Langkah 3: Form Penilaian & Capaian Pembelajaran -->
+      <div id="panelFormNilai" class="hidden space-y-5">
+        
+        <!-- Form Capaian Pembelajaran (CP) -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border-t-4 border-[#ca8a04] space-y-3">
+          <div class="flex items-center justify-between">
+            <label for="inputCP" class="font-extrabold text-[#374151] text-base sm:text-lg">
+              Capaian Pembelajaran (CP) / Tujuan Pembelajaran:
+            </label>
+            <span class="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200">Wajib Diisi</span>
+          </div>
+          <textarea 
+            id="inputCP" 
+            rows="2" 
+            placeholder="Tuliskan capaian pembelajaran di sini..."
+            oninput="updateCPStatusLock()"
+            class="w-full p-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:border-[#ca8a04]"
+          ></textarea>
+          
+          <div class="flex justify-end">
+            <button onclick="simpanCPManual()" class="px-4 py-2 bg-[#ca8a04] text-white font-bold rounded-xl text-sm shadow hover:bg-yellow-700 active:scale-95">
+              💾 Simpan & Kunci CP
+            </button>
+          </div>
+
+          <!-- Alert Jika CP Belum Diisi -->
+          <div id="alertLockCP" class="p-3 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 text-sm font-semibold rounded-r-lg">
+            ⚠️ Kolom input nilai terkunci. Harap isi dan simpan Capaian Pembelajaran (CP) di atas terlebih dahulu.
+          </div>
+        </div>
+
+        <!-- Pilihan Tab Asesmen & Tombol Unduh/Cetak -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button id="btnTab_pts_ganjil" onclick="setKategoriAsesmen('pts_ganjil')" class="py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base bg-[#15803d] text-white shadow">
+              PTS Ganjil
+            </button>
+            <button id="btnTab_sas_ganjil" onclick="setKategoriAsesmen('sas_ganjil')" class="py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base bg-gray-100 text-gray-700 hover:bg-gray-200">
+              SAS Ganjil
+            </button>
+            <button id="btnTab_pts_genap" onclick="setKategoriAsesmen('pts_genap')" class="py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base bg-gray-100 text-gray-700 hover:bg-gray-200">
+              PTS Genap
+            </button>
+            <button id="btnTab_sas_genap" onclick="setKategoriAsesmen('sas_genap')" class="py-2.5 px-3 rounded-xl font-bold text-sm sm:text-base bg-gray-100 text-gray-700 hover:bg-gray-200">
+              SAS Genap
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <button onclick="exportExcelNilai()" class="py-3 bg-[#15803d] hover:bg-[#166534] active:scale-98 text-white font-bold rounded-xl shadow text-sm sm:text-base flex justify-center items-center gap-2">
+              <span>📄</span> Unduh Excel
+            </button>
+            <button onclick="cetakPDFNilai()" class="py-3 bg-[#dc2626] hover:bg-red-700 active:scale-98 text-white font-bold rounded-xl shadow text-sm sm:text-base flex justify-center items-center gap-2">
+              <span>🖨️</span> Cetak Rekap Nilai
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabel Input Nilai -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-[#374151] text-white text-base font-bold">
+                  <th class="p-3.5 text-center w-12">NO</th>
+                  <th class="p-3.5 w-28 hidden sm:table-cell">NISN</th>
+                  <th class="p-3.5">NAMA SISWA</th>
+                  <th class="p-3.5 text-center w-28">NILAI</th>
+                  <th class="p-3.5 text-center w-24">STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="nilaiTableBody" class="divide-y divide-gray-200 font-medium"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tombol Simpan Batch -->
+        <div class="pt-2">
+          <button id="btnSimpanNilai" onclick="simpanSemuaNilai()" class="w-full py-4 bg-[#15803d] hover:bg-[#166534] active:scale-98 text-white font-black rounded-2xl text-lg shadow-lg flex justify-center items-center gap-2">
+            💾 SIMPAN SELURUH NILAI KE GOOGLE SHEET
+          </button>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- VIEW PLACEHOLDER ALUMNI -->
     <main id="view-alumni" class="hidden flex-1 space-y-5">
       <button onclick="goBack()" class="px-4 py-2 bg-[#374151] text-white font-bold rounded-xl text-base">← Kembali</button>
       <h2 class="text-2xl font-bold text-[#dc2626]">Modul Data Alumni</h2>
       <p class="text-gray-500">Akan dikembangkan pada tahap selanjutnya.</p>
     </main>
 
-    <main id="view-rapot" class="hidden flex-1 space-y-5">
-      <button onclick="goBack()" class="px-4 py-2 bg-[#374151] text-white font-bold rounded-xl text-base">← Kembali</button>
-      <h2 class="text-2xl font-bold text-[#374151]">Modul Rapot</h2>
-      <p class="text-gray-500">Akan dikembangkan pada tahap selanjutnya.</p>
-    </main>
-
   </div>
 
-  <!-- ================= BOTTOM SHEET DETAIL SISWA ================= -->
+  <!-- BOTTOM SHEET DETAIL SISWA -->
   <div id="detailBackdrop" onclick="closeDetailSiswa()" class="hidden fixed inset-0 bg-black/60 z-40 transition-opacity backdrop-blur-sm"></div>
-
   <div id="detailDrawer" class="fixed inset-x-0 bottom-0 z-50 transform translate-y-full transition-transform duration-300 ease-out max-w-2xl sm:max-w-xl mx-auto">
     <div class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border-t-4 border-[#ca8a04] flex flex-col">
       <div class="p-3.5 pb-2 border-b border-gray-100 flex flex-col items-center relative">
@@ -225,50 +335,35 @@
           <button onclick="closeDetailSiswa()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 font-bold active:bg-gray-200">&times;</button>
         </div>
       </div>
-
-      <div class="p-3.5 space-y-2 text-sm sm:text-base" id="detailBody">
-        <!-- Rendered by datasiswa.js -->
-      </div>
-
+      <div class="p-3.5 space-y-2 text-sm sm:text-base" id="detailBody"></div>
       <div class="p-3 bg-gray-50 border-t border-gray-200">
-        <button onclick="closeDetailSiswa()" class="w-full py-2.5 bg-[#374151] text-white font-bold rounded-xl active:bg-black text-base shadow">
-          Tutup
-        </button>
+        <button onclick="closeDetailSiswa()" class="w-full py-2.5 bg-[#374151] text-white font-bold rounded-xl active:bg-black text-base shadow">Tutup</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= BOTTOM SHEET DETAIL GURU ================= -->
+  <!-- BOTTOM SHEET DETAIL GURU -->
   <div id="detailGuruBackdrop" onclick="closeDetailGuru()" class="hidden fixed inset-0 bg-black/60 z-40 transition-opacity backdrop-blur-sm"></div>
-
   <div id="detailGuruDrawer" class="fixed inset-x-0 bottom-0 z-50 transform translate-y-full transition-transform duration-300 ease-out max-w-2xl sm:max-w-xl mx-auto">
-    <div class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border-t-4 border-[#ca8a04] flex flex-col">
-      
-      <div class="p-3.5 pb-2 border-b border-gray-100 flex flex-col items-center relative">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border-t-4 border-[#ca8a04] flex flex-col max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div class="p-3.5 pb-2 border-b border-gray-100 flex flex-col items-center relative sticky top-0 bg-white z-10">
         <div class="w-10 h-1 bg-gray-300 rounded-full mb-1.5 sm:hidden"></div>
         <div class="w-full flex justify-between items-center px-1">
           <h3 class="text-lg sm:text-xl font-black text-[#374151]">Profil Lengkap Guru</h3>
           <button onclick="closeDetailGuru()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 font-bold active:bg-gray-200">&times;</button>
         </div>
       </div>
-
-      <div class="p-3.5 space-y-2 text-sm sm:text-base" id="detailGuruBody">
-        <!-- Rendered by dataguru.js -->
+      <div class="p-3.5 space-y-2 text-sm sm:text-base" id="detailGuruBody"></div>
+      <div class="p-3 bg-gray-50 border-t border-gray-200 sticky bottom-0">
+        <button onclick="closeDetailGuru()" class="w-full py-2.5 bg-[#374151] text-white font-bold rounded-xl active:bg-black text-base shadow">Tutup</button>
       </div>
-
-      <div class="p-3 bg-gray-50 border-t border-gray-200">
-        <button onclick="closeDetailGuru()" class="w-full py-2.5 bg-[#374151] text-white font-bold rounded-xl active:bg-black text-base shadow">
-          Tutup
-        </button>
-      </div>
-
     </div>
   </div>
 
-  <!-- ================= CONTAINER CETAK (A4 LANDSCAPE) ================= -->
+  <!-- CONTAINER CETAK (A4 LANDSCAPE) -->
   <div id="printableArea"></div>
 
-  <!-- JS SCRIPTS -->
+  <!-- JS LOADER -->
   <script src="app.js"></script>
   <script src="datasiswa.js"></script>
   <script src="dataguru.js"></script>
