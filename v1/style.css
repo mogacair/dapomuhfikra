@@ -1,0 +1,96 @@
+/* Palet Warna & Custom Scrollbar */
+:root {
+  --brand-green: #15803d;
+  --brand-green-hover: #166534;
+  --brand-red: #dc2626;
+  --brand-yellow: #ca8a04;
+  --brand-gray-bg: #f3f4f6;
+  --brand-gray-dark: #374151;
+}
+
+body {
+  overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* ================= PRINT RULES (A4 LANDSCAPE) ================= */
+@media screen {
+  #printableArea {
+    display: none !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm 10mm 12mm 10mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #printableArea, #printableArea * {
+    visibility: visible;
+  }
+  #printableArea {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #000;
+    background: #fff;
+    font-family: 'Times New Roman', Times, serif;
+  }
+  .print-header {
+    text-align: center;
+    font-size: 14pt;
+    font-weight: bold;
+    line-height: 1.35;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .print-rekap {
+    font-size: 10pt;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: flex-start;
+    gap: 20px;
+  }
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .print-table th, .print-table td {
+    border: 1px solid #000;
+    padding: 5px 6px;
+    font-size: 9pt;
+    vertical-align: middle;
+  }
+  .print-table th {
+    background-color: #f2f2f2 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    text-align: center;
+    font-weight: bold;
+  }
+  .print-ttd-wrap {
+    margin-top: 25px;
+    width: 100%;
+    page-break-inside: avoid;
+  }
+  .print-ttd {
+    float: right;
+    width: 250px;
+    font-size: 10.5pt;
+    line-height: 1.3;
+  }
+}
